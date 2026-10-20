@@ -57,13 +57,14 @@ import {
   resolveBoatPanelAction,
   shouldPollCloudPreview,
 } from "@/lib/local-computer";
-import { moveBetweenTabs, PANEL_TABS, panelTabProps, scrollTabsWithWheel, TAB_PANEL_FOCUS, tabPanelProps, useAndroidTabFallback } from "./computer-panel-tabs";
+import { moveBetweenTabs, PANEL_TABS, panelTabProps, scrollTabsWithWheel, TAB_PANEL_FOCUS, tabPanelProps, useAndroidTabFallback, useSelectedTabInView } from "./computer-panel-tabs";
 import { releaseComputerPanelFocus, useComputerPanelEntry } from "@/lib/computer-panel-focus";
 import { PANEL_MAX_WIDTH, PANEL_MIN_WIDTH, useComputerPanelResize } from "./computer-panel-resize";
 import {
   computerPanelTabs,
   readComputerPanelView,
   resolveComputerPanelView,
+  useComputerPanelViewRequests,
   writeComputerPanelView,
   type ComputerPanelView,
 } from "@/lib/computer-panel-view";
@@ -308,11 +309,11 @@ export function ComputerPanel({
     (instance) => instance.instanceId === bot.modelSelection.instanceId,
   );
   const explicitPanelView = useRef(false);
-  const selectPanelView = (view: ComputerPanelView) => {
+  const selectPanelView = useCallback((view: ComputerPanelView) => {
     explicitPanelView.current = true;
     setPanelView(view);
     writeComputerPanelView(bot.id, view);
-  };
+  }, [bot.id]);
 
   const previousPanelTarget = useRef<string | null>(null);
   // Excludes the model and Auto's resolved surface: neither may move the tab.
@@ -325,6 +326,8 @@ export function ComputerPanel({
     setPanelView(bot.computer === "browser" && browserEnabled ? "browser"
       : previous === null ? readComputerPanelView(bot.id) : "computer");
   }, [panelTargetKey, bot.id, bot.computer, browserEnabled]);
+  useComputerPanelViewRequests(bot.id, selectPanelView);
+  useSelectedTabInView(panelView);
 
   useEffect(() => {
     if (!requestedDataResult || requestedDataResult.consumed) return;

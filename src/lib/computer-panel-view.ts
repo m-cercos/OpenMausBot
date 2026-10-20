@@ -1,10 +1,12 @@
+import { useEffect } from "react";
+
 export type ComputerPanelView = "computer" | "android" | "browser" | "routines" | "files" | "data";
 
 type PanelTabsContext = { advanced: boolean; androidConnected: boolean };
 
 export function computerPanelTabs({ advanced, androidConnected }: PanelTabsContext): ComputerPanelView[] {
   return advanced
-    ? ["computer", "routines", ...(androidConnected ? (["android"] as const) : []), "browser", "data"]
+    ? ["computer", "routines", ...(androidConnected ? (["android"] as const) : []), "browser", "data", "files"]
     : ["computer", "browser", "data", "files"];
 }
 
@@ -39,4 +41,29 @@ export function writeComputerPanelView(
     storage.setItem(storageKey(botId), view);
   } catch {
   }
+}
+
+const viewRequests = new Set<(botId: string, view: ComputerPanelView) => void>();
+const pendingViews = new Map<string, ComputerPanelView>();
+
+export function requestComputerPanelView(botId: string, view: ComputerPanelView): void {
+  writeComputerPanelView(botId, view);
+  pendingViews.set(botId, view);
+  for (const request of Array.from(viewRequests)) request(botId, view);
+}
+
+export function useComputerPanelViewRequests(botId: string, select: (view: ComputerPanelView) => void): void {
+  useEffect(() => {
+    const request = (target: string, view: ComputerPanelView) => {
+      if (target !== botId) return;
+      pendingViews.delete(target);
+      select(view);
+    };
+    const pending = pendingViews.get(botId);
+    if (pending) request(botId, pending);
+    viewRequests.add(request);
+    return () => {
+      viewRequests.delete(request);
+    };
+  }, [botId, select]);
 }

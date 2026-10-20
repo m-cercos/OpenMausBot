@@ -234,7 +234,7 @@ function RoomTextMessage({
         {user && (
           <MessageActions side="user" menu={userMessageMenu({ messageId: m.id, pin })}>
             <ReplyAction onReply={() => onReply(m)} />
-            {Boolean(display.trim()) && <CopyButton text={display} className={messageActionClass} />}
+            {Boolean(display.trim()) && <CopyButton text={display} />}
           </MessageActions>
         )}
         <div
@@ -319,7 +319,7 @@ function RoomTextMessage({
         {!user && (
           <MessageActions side="bot" forceOpen={viewRaw || speaking} menu={botMenu}>
             <ReplyAction onReply={() => onReply(m)} />
-            {botText && <CopyButton text={botText} className={messageActionClass} />}
+            {botText && <CopyButton text={botText} />}
             {botText && viewRaw && <RawToggleAction active onToggle={() => setViewRaw(false)} className={messageActionClass} />}
             {botText && speaking && (
               <SpeakButton text={botText} botId={speakerBot?.id} messageId={m.id} voiceId={speakerBot?.voice} tts={state.config?.tts} localVoice={localSystemVoiceActive()} className={cn(messageActionClass, "text-accent")} />

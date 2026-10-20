@@ -3,7 +3,7 @@ import { useAdvancedMode } from "@/lib/interface-mode";
 import { ThreadLinkContext } from "@/components/ThreadLinkMenu";
 import { useShowThreads } from "@/lib/thread-preferences";
 import { useCopyFeedback } from "@/lib/copy-text";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Copy, Crown, Monitor, Pin, RefreshCw, Square, Reply, Webhook, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Copy, Crown, FolderOpen, Monitor, PanelRight, Pin, RefreshCw, Square, Reply, Webhook, X } from "lucide-react";
 import { WorkingDots } from "@/components/WorkingIndicator";
 import { ACTION_ICON, MESSAGE_ROW, MessageActions, messageActionClass } from "@/components/MessageActions";
 import { useBotMessageMenu, userMessageMenu } from "@/components/message-menu";
@@ -11,6 +11,7 @@ import { useSpeech } from "@/lib/tts/useSpeech";
 import { localSystemVoiceActive } from "@/lib/local-voice";
 import { computerStartLine } from "@/lib/computer-start";
 import { rememberComputerPanelOpen } from "@/lib/computer-panel-focus";
+import { requestComputerPanelView } from "@/lib/computer-panel-view";
 import { useCaptionChrome, useDesktopCapabilities } from "@/components/DesktopCapabilities";
 import {
   api,
@@ -98,7 +99,7 @@ import { effectivePlace, toolPlace, type EffectivePlace } from "@/lib/place";
 import { cn } from "@/lib/cn";
 import { activeLocale, t } from "@/lib/i18n";
 import { COMPACT_BUBBLE } from "@/lib/compact-chip";
-import { groupTranscript, isStatusActivity, isToolStep } from "@/lib/activity-runs";
+import { groupTranscript, isStatusActivity, isToolStep, runElapsed } from "@/lib/activity-runs";
 import { StatusActivityRow } from "@/components/StatusActivityRow";
 import { CancelledTurnRow } from "./CancelledTurnRow";
 import { ActivityRun } from "./ActivityRun";
@@ -180,7 +181,15 @@ export function ReplyAction({ onReply }: { onReply: () => void }) {
   );
 }
 
-export function CopyButton({ text, className }: { text: string; className?: string }) {
+function RegenerateAction({ onRegenerate }: { onRegenerate: () => void }) {
+  return (
+    <button type="button" onClick={onRegenerate} aria-label={t("chat.regenerate")} title={t("chat.regenerate")} className={messageActionClass}>
+      <RefreshCw {...ACTION_ICON} aria-hidden="true" />
+    </button>
+  );
+}
+
+export function CopyButton({ text }: { text: string }) {
   const { state, copy } = useCopyFeedback(text);
   const label = t(state === "copied" ? "chat.copyMessageDone" : state === "failed" ? "chat.copyMessageFailed" : "chat.copyMessage");
   return (
@@ -188,11 +197,7 @@ export function CopyButton({ text, className }: { text: string; className?: stri
       onClick={copy}
       aria-label={label}
       title={label}
-      className={cn(
-        "rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 touch:opacity-100",
-        state !== "idle" && "opacity-100",
-        className,
-      )}
+      className={messageActionClass}
     >
       {state === "copied" ? <Check {...ACTION_ICON} className="text-success" /> : state === "failed" ? <X {...ACTION_ICON} className="text-danger" /> : <Copy {...ACTION_ICON} />}
     </button>
@@ -398,11 +403,13 @@ const Bubble = memo(function Bubble({
   onStartEdit,
   onCancelEdit,
   onSubmitEdit,
+  latest = false,
   onRegenerate,
   replyTarget,
   onReply,
 }: {
   message: Message;
+  latest?: boolean;
   emerging?: boolean;
   eagerAttachments?: boolean;
   editing: boolean;
@@ -436,7 +443,6 @@ const Bubble = memo(function Bubble({
     canSpeak: message.kind === "text" && !peer,
     viewRaw,
     onToggleRaw: () => setViewRaw((raw) => !raw),
-    onRegenerate: !busy ? onRegenerate : undefined,
     pin: remoteClient ? undefined : {
       pinned,
       onToggle: () => dispatch({ type: "updateTask", botId, threadId, patch: { pinnedMessageId: pinned ? "" : message.id } }),
@@ -512,7 +518,7 @@ const Bubble = memo(function Bubble({
             })}
           >
             <ReplyAction onReply={() => onReply(message)} />
-            {Boolean(visibleText.trim()) && <CopyButton text={visibleText} className={messageActionClass} />}
+            {Boolean(visibleText.trim()) && <CopyButton text={visibleText} />}
           </MessageActions>
         )}
         <div
@@ -624,9 +630,10 @@ const Bubble = memo(function Bubble({
         </div>
         {user ? sentAt : (
           <div className="-ml-1.5 -mt-1 flex items-center">
-            <MessageActions side="bot" forceOpen={viewRaw || speaking} menu={botMenu} className="self-center pb-0">
+            <MessageActions side="bot" forceOpen={(latest && !busy) || viewRaw || speaking} menu={botMenu} className="self-center pb-0">
               <ReplyAction onReply={() => onReply(message)} />
-              {text && <CopyButton text={text} className={messageActionClass} />}
+              {text && <CopyButton text={text} />}
+              {onRegenerate && !busy && <RegenerateAction onRegenerate={onRegenerate} />}
               {text && viewRaw && <RawToggleAction active onToggle={() => setViewRaw(false)} className={messageActionClass} />}
               {text && speaking && (
                 <SpeakButton text={text} botId={botId} messageId={message.id} voiceId={voiceId} tts={tts} localVoice={localVoice} className={cn(messageActionClass, "text-accent")} />
@@ -853,11 +860,16 @@ const MessagesList = memo(function MessagesList({
         if (item.kind === "run") {
           if (!showToolCalls) return divider && <div key={item.id} className="contents">{divider}</div>;
           stepsShownThisTurn = true;
+          const next = items[i + 1];
           return (
             <div key={item.id} className="contents">
               {newDay && <DaySeparator at={first.at} today={today} />}
               {divider}
-              <ActivityRun messages={item.messages} forceOpen={item.messages.some((step) => step.id === focusedId)}>
+              <ActivityRun
+                messages={item.messages}
+                elapsedMs={runElapsed(item.messages, prev, next && (next.kind === "message" ? next.message : next.messages[0]), busy)}
+                forceOpen={item.messages.some((step) => step.id === focusedId)}
+              >
                 {item.messages.map((step) => (
                   <div key={step.id} className="contents" data-mid={step.id}>
                     <ActivityChip message={step} place={place} />
@@ -933,6 +945,7 @@ const MessagesList = memo(function MessagesList({
                   onStartEdit={onStartEdit}
                   onCancelEdit={onCancelEdit}
                   onSubmitEdit={onSubmitEdit}
+                  latest={m.id === lastBotTextId}
                   onRegenerate={m.id === lastBotTextId ? onRegenerate : undefined}
                   replyTarget={lookups.replyTarget(m)}
                   onReply={onReply}
@@ -1203,7 +1216,7 @@ export function ChatView({ bot: profile }: { bot: Bot }) {
         {...headerDragProps}
         className={cn(
           // A container query never matches the container itself, so the row that wraps is the child below.
-          "@container/chathead px-5 py-3",
+          "@container/chathead border-b border-hairline/40 px-5 py-3",
           "pl-11 md:pl-5",
         )}
       >
@@ -1312,6 +1325,30 @@ export function ChatView({ bot: profile }: { bot: Bot }) {
             title={t("chat.computer")} aria-label={busy && place === "browser" ? `${t("chat.computer")}, ${t("place.live")}` : t("chat.computer")}
           >
             <Monitor size={18} />{busy && place === "browser" && <span aria-hidden="true" className="absolute right-1 top-1 size-1.5 animate-pulse rounded-full bg-success" data-testid="computer-button-live" />}
+          </button>}
+          {advanced && !remoteClient && <button
+            type="button"
+            data-chathead-files
+            onClick={(event) => {
+              requestComputerPanelView(bot.id, "files");
+              if (state.computerOpen) return;
+              rememberComputerPanelOpen({ botId: bot.id, opener: event.currentTarget, tabs: event.detail === 0 });
+              dispatch({ type: "toggleComputer", open: true });
+            }}
+            className="rounded-md p-1.5 text-ink-secondary hover:bg-raised hover:text-ink"
+            title={t("computer.tab.files")} aria-label={t("computer.tab.files")}
+          >
+            <FolderOpen size={18} />
+          </button>}
+          {advanced && <button
+            type="button"
+            data-chathead-panel
+            onClick={() => dispatch({ type: "toggleSettings" })}
+            aria-pressed={state.settingsOpen}
+            className={cn("rounded-md p-1.5 hover:bg-raised", state.settingsOpen ? "text-accent" : "text-ink-secondary hover:text-ink")}
+            title={t("chat.botPanel")} aria-label={t("chat.botPanel")}
+          >
+            <PanelRight size={18} />
           </button>}
           {(advanced || remoteClient) && <ChatHeaderMenu key={`menu:${bot.threadId}`} bot={bot} />}
         </div>

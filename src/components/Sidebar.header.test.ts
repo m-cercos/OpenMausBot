@@ -308,4 +308,25 @@ describe("sidebar places and foot", () => {
     expect(html.match(/data-sidebar-nav="apps"/g)).toHaveLength(1);
     expect(html.indexOf('data-sidebar-nav="apps"')).toBeGreaterThan(foot);
   });
+
+  it.each(["comfortable", "compact"] as const)(
+    "titles the Advanced sidebar MausBot with a search button where the search box was, above New bot (%s)",
+    (density) => {
+      fixture.density = density;
+      const html = render();
+      const title = html.indexOf("data-sidebar-title");
+      expect(title).toBeGreaterThan(-1);
+      expect(html.slice(title, html.indexOf('data-sidebar-nav="new-bot"'))).toContain(">MausBot</span>");
+      expect(html.slice(title, html.indexOf('data-sidebar-nav="new-bot"'))).toContain("data-sidebar-search-toggle");
+      expect(html).not.toContain('placeholder="Search"');
+    },
+  );
+
+  it("keeps the title out of Simple mode and the avatars-only sidebar", () => {
+    fixture.advanced = false;
+    expect(render()).not.toContain("data-sidebar-title");
+    fixture.advanced = true;
+    fixture.density = "icons";
+    expect(render()).not.toContain("data-sidebar-title");
+  });
 });

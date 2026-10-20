@@ -34,6 +34,7 @@ import { ComposerAttachments, pathForFile } from "./ComposerAttachments";
 import { splitTranscriptCitations, type CitationAttachment } from "@/lib/citations";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { PlaceChip } from "./PlaceChip";
+import { ApprovalModeChoices } from "./ApprovalModeChoices";
 import { ApprovalModeSelector } from "./ApprovalModeSelector";
 import { ModelPicker } from "./ModelPicker";
 import { CommandAllowlistDialog } from "./CommandAllowlistDialog";
@@ -986,7 +987,8 @@ export function Composer({
             </div>
           )}
           <div data-composer-actions className="ml-auto flex items-center gap-1">
-          {bot && !group && advanced && !remoteClient && <ModelPicker key={bot.threadId} bot={bot} threadId={bot.threadId} inComposer />}
+          {bot && !group && advanced && !remoteClient && <ModelPicker key={bot.threadId} bot={bot} threadId={bot.threadId} inComposer
+            approval={approvalChoice && modeBot && <ApprovalModeChoices {...approvalChoice} label={t("botSettings.simple.beforeActs", { name: modeBot.name })} />} />}
           {busy && !locked && (
           <button
             onClick={interruptTurn}
@@ -1014,10 +1016,10 @@ export function Composer({
         )}
         {bot && !group && <CallButton bot={bot} placement="composer" fill={advanced ? undefined : MAUS_COLORS[bot.color] ?? MAUS_COLORS.green} />}
         {group && !advanced && <GroupCallButton group={group} members={members ?? []} placement="composer" fill="var(--color-accent)" />}
-        {hasContent && !locked && (
+        {!locked && (hasContent || !busy) && (
           <button
             onClick={send}
-            disabled={attachmentPending}
+            disabled={!hasContent || attachmentPending}
             aria-label={
               busy && canSteer
                   ? t("composer.send.steer")
@@ -1033,10 +1035,10 @@ export function Composer({
                     : `${t("chat.send")} (${sendLabel})`
             }
             className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full text-white",
+              "flex size-8 shrink-0 items-center justify-center rounded-full",
               busy && !canSteer
                   ? "bg-raised text-ink-secondary hover:bg-raised-hover"
-                  : "bg-accent hover:brightness-110",
+                  : "bg-ink text-app hover:opacity-90 disabled:cursor-default disabled:bg-ink/15 disabled:hover:opacity-100",
             )}
           >
             {busy && !canSteer ? <Clock size={15} /> : <ArrowUp size={17} />}

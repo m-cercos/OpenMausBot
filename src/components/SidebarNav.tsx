@@ -1,4 +1,4 @@
-import { FolderOpen, Network, Puzzle, Sun, Zap } from "lucide-react";
+import { FolderOpen, Network, Puzzle, SquarePen, Sun, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useAppTriggers } from "@/lib/app-triggers";
@@ -58,13 +58,20 @@ function NavRow({
   );
 }
 
-/** Today, like an inbox, then the places, at the top of the sidebar; the avatars-only density keeps its places in the footer. */
+/** New bot, Today (like an inbox), then the places, at the top of the sidebar; the avatars-only density keeps its places in the footer. */
 export function SidebarTopNav({ density }: { density: SidebarDensity }) {
   const { state, dispatch } = useStore();
   const iconsOnly = density === "icons";
   const active = state.activeView === "today";
   return (
-    <div className={iconsOnly ? "flex justify-center px-2 pb-1" : "flex flex-col gap-0.5 px-2 pb-2"}>
+    <div className={iconsOnly ? "flex justify-center px-2 pb-1" : "mx-2 mb-2 flex flex-col gap-0.5 border-b border-hairline/40 pb-2"}>
+      {!iconsOnly && <NavRow
+        id="new-bot"
+        label={t("sidebar.newBot")}
+        iconsOnly={false}
+        icon={() => <SquarePen size={18} className="text-ink-secondary" />}
+        onClick={() => dispatch({ type: "toggleNewBot", open: true })}
+      />}
       <NavRow
         id="today"
         label={t("sidebar.nav.today")}

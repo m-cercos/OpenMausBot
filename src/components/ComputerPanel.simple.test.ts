@@ -211,13 +211,13 @@ describe("Computer panel tabs", () => {
     expect(tabs(render(makeBot()))).toEqual(["Computer", "Browser", "Data", "Files"]);
   });
 
-  it("keeps the Advanced tabs unchanged", () => {
+  it("ends the Advanced tabs with Files", () => {
     fixture.advanced = true;
     fixture.android = true;
-    expect(tabs(render(makeBot()))).toEqual(["Computer", "Routines", "Android", "Browser", "Data"]);
+    expect(tabs(render(makeBot()))).toEqual(["Computer", "Routines", "Android", "Browser", "Data", "Files"]);
     fixture.config = {};
     fixture.android = false;
-    expect(tabs(render(makeBot()))).toEqual(["Computer", "Routines", "Browser", "Data"]);
+    expect(tabs(render(makeBot()))).toEqual(["Computer", "Routines", "Browser", "Data", "Files"]);
   });
 
   it("reads a Routines view stored by Advanced as the Computer tab in Simple", () => {

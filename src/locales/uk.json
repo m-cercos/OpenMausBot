@@ -330,7 +330,6 @@
   "common.delete": "Видалити",
   "common.undo": "Скасувати дію",
   "sidebar.aria": "Боти й навігація",
-  "sidebar.search": "Пошук",
   "sidebar.searchAria": "Пошук ботів і повідомлень",
   "sidebar.noMatch": "Нічого не відповідає «{query}»",
   "sidebar.preview.waiting": "Чекаємо на вас…",

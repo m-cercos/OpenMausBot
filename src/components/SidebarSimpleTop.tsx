@@ -57,7 +57,12 @@ export function SidebarEdgeToggle({ collapsed, onToggle, style, anchorRef }: {
   return pinned ? createPortal(button, document.body) : button;
 }
 
-export function SidebarSearchToggle({ open, onToggle, ref }: { open: boolean; onToggle: () => void; ref?: Ref<HTMLButtonElement> }) {
+export function SidebarSearchToggle({ open, onToggle, ref, className = SIMPLE_TOP_BUTTON }: {
+  open: boolean;
+  onToggle: () => void;
+  ref?: Ref<HTMLButtonElement>;
+  className?: string;
+}) {
   return (
     <button
       ref={ref}
@@ -67,7 +72,7 @@ export function SidebarSearchToggle({ open, onToggle, ref }: { open: boolean; on
       aria-label={t("sidebar.searchAria")}
       aria-expanded={open}
       title={t("sidebar.searchAria")}
-      className={cn(SIMPLE_TOP_BUTTON, open && "bg-raised")}
+      className={cn(className, open && "bg-raised")}
     >
       <Search size={15} strokeWidth={2} aria-hidden="true" />
     </button>

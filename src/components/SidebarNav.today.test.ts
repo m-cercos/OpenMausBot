@@ -43,11 +43,17 @@ it("opening Today closes the side panels, and choosing a bot leaves it", () => {
   expect(reducer(open, { type: "showChat" }).activeView).toBe("chat");
 });
 
-it.each(["comfortable", "compact"] as const)("puts the places right under Today at the top of the sidebar (%s)", async (density) => {
+it.each(["comfortable", "compact"] as const)("puts New bot, then Today, then the places at the top of the sidebar (%s)", async (density) => {
   await render(density);
   const rows = [...host.querySelectorAll("[data-sidebar-nav]")].map((row) => row.getAttribute("data-sidebar-nav"));
-  expect(rows[0]).toBe("today");
+  expect(rows.slice(0, 2)).toEqual(["new-bot", "today"]);
   expect(rows).toContain("automations");
+});
+
+it("opens the new bot form from the New bot row", async () => {
+  await render("comfortable");
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-sidebar-nav="new-bot"]')!.click());
+  expect(dispatch).toHaveBeenCalledWith({ type: "toggleNewBot", open: true });
 });
 
 it("leaves the avatars-only sidebar's places to its footer", async () => {

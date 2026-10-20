@@ -123,6 +123,19 @@ describe("the header's right side", () => {
     expect(inspector.disabled).toBeFalsy();
     expect(inspector.heading).toBeUndefined();
   });
+
+  it("puts the bot's files and its panel beside the computer in Advanced mode, which Simple leaves to the bot panel", () => {
+    fixture.advanced = true;
+    const { controls } = header();
+    const computer = controls.indexOf('data-tour="computer"');
+    expect(controls.indexOf("data-chathead-files")).toBeGreaterThan(computer);
+    expect(controls.indexOf("data-chathead-panel")).toBeGreaterThan(controls.indexOf("data-chathead-files"));
+    expect(controls.indexOf('data-testid="chat-more"')).toBeGreaterThan(controls.indexOf("data-chathead-panel"));
+    fixture.advanced = false;
+    expect(header().controls).not.toContain("data-chathead-files");
+    expect(header().controls).not.toContain("data-chathead-panel");
+    fixture.advanced = true;
+  });
 });
 
 describe("header name", () => {

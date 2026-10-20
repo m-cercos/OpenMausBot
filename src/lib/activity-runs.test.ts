@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeRun, groupActivityRuns, groupTranscript, isRecoveryActivity, isToolStep, statusActivity } from "./activity-runs";
+import { describeRun, groupActivityRuns, groupTranscript, isRecoveryActivity, isToolStep, runElapsed, statusActivity } from "./activity-runs";
 import type { Message } from "@/state/store";
 
 let seq = 0;
@@ -199,6 +199,29 @@ describe("describeRun", () => {
   it("names steps by the label it is given, counting steps that read the same together", () => {
     const plain = ({ name }: { name: string }) => (name === "Bash" || name.includes(" ") ? "Run a command" : name);
     expect(describeRun([tool("Bash"), tool("ls -la"), tool("Edit")], plain)).toBe("3 steps · Run a command ×2, Edit");
+  });
+});
+
+describe("how long a run took", () => {
+  const step = (at: number): Message => ({ ...tool("Edit"), at });
+  const said = (at: number, role: Message["role"]): Message => ({ id: `${role}${at}`, at, role, kind: "text", text: "…" });
+
+  it("leads with the time worked once it reaches a second", () => {
+    expect(describeRun([tool("Edit"), tool("Bash")], undefined, 102_000)).toBe("Worked 1m 42s · Edit, Bash");
+    expect(describeRun([tool("Edit"), tool("Bash")], undefined, 900)).toBe("2 steps · Edit, Bash");
+  });
+
+  it("runs from the request before the steps to the reply after them", () => {
+    expect(runElapsed([step(5_000), step(9_000)], said(1_000, "user"), said(20_000, "bot"), false)).toBe(19_000);
+  });
+
+  it("counts only the steps themselves when the turn has no request or reply around them", () => {
+    expect(runElapsed([step(5_000), step(9_000)], said(1_000, "bot"), said(60_000, "user"), false)).toBe(4_000);
+    expect(runElapsed([step(5_000), step(9_000)], undefined, undefined, false)).toBe(4_000);
+  });
+
+  it("has no length yet while the run is the last thing and the bot still works", () => {
+    expect(runElapsed([step(5_000)], said(1_000, "user"), undefined, true)).toBeUndefined();
   });
 });
 

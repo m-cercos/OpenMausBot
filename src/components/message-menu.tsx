@@ -1,4 +1,4 @@
-import { Code, Copy, Eye, Pencil, Pin, PinOff, RefreshCw, Square, Volume2 } from "lucide-react";
+import { Code, Copy, Eye, Pencil, Pin, PinOff, Square, Volume2 } from "lucide-react";
 import { copyText } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
 import type { ConfigStatus } from "@/state/store";
@@ -32,7 +32,6 @@ export function useBotMessageMenu({
   canSpeak,
   viewRaw,
   onToggleRaw,
-  onRegenerate,
   pin,
 }: {
   text: string;
@@ -44,7 +43,6 @@ export function useBotMessageMenu({
   canSpeak: boolean;
   viewRaw: boolean;
   onToggleRaw: () => void;
-  onRegenerate?: () => void;
   pin?: PinAction;
 }): MessageMenuItem[] {
   const speak = useSpeakAction({ text, botId, messageId, voiceId, tts, localVoice });
@@ -67,7 +65,6 @@ export function useBotMessageMenu({
       onSelect: onToggleRaw,
     });
   }
-  if (onRegenerate) items.push({ key: "regenerate", icon: <RefreshCw {...ACTION_ICON} />, label: t("chat.regenerate"), onSelect: onRegenerate });
   items.push(...pinItem(pin), idItem(messageId));
   return items;
 }

@@ -14,7 +14,7 @@ vi.mock("@/lib/interface-mode", async (original) => ({
 }));
 
 import { ConfirmDialogCard } from "./ConfirmDialog";
-import { BotDeleteMenuItem, BotListItem, botConfirmCopy, botRowProps, currentArchivableBot } from "./Sidebar";
+import { BotDeleteMenuItem, BotListItem, botConfirmCopy, botRowProps, botRowTime, currentArchivableBot } from "./Sidebar";
 import { endCall } from "@/lib/call";
 import { configureLiveMedia, resetLiveMedia, startLiveCall } from "@/lib/live-call-media";
 
@@ -159,12 +159,20 @@ describe("BotListItem", () => {
       expect(markup).not.toContain("Call with Atlas");
     });
 
-    it("times the open row by the last reply, not by the hang-up", () => {
-      const markup = draw(bot({
-        messages: [spoken, { id: "b1", role: "bot", kind: "text", text: "Sunny in Pune.", at: at(1) }, record] as Bot["messages"],
-      }), { selected: true });
-      expect(markup).toContain(formatTime(at(1)));
-      expect(markup).not.toContain(formatTime(at(2)));
+    it("times the row by the last reply, not by the hang-up, open or not", () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(at(30));
+      try {
+        for (const selected of [true, false]) {
+          const markup = draw(bot({
+            messages: [spoken, { id: "b1", role: "bot", kind: "text", text: "Sunny in Pune.", at: at(1) }, record] as Bot["messages"],
+          }), { selected });
+          expect(markup).toContain(formatTime(at(1)));
+          expect(markup).not.toContain(formatTime(at(2)));
+        }
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("names the step the bot is on while it works, when the call ended under it", () => {
@@ -460,5 +468,19 @@ describe("bot deletion feedback", () => {
         expect(markup).not.toContain("Chief of Staff</span>");
       }
     });
+  });
+});
+
+describe("a bot row's time", () => {
+  const now = new Date(2026, 9, 20, 15, 0).getTime();
+
+  it("is the clock time today, like a chat list", () => {
+    const at = new Date(2026, 9, 20, 9, 5).getTime();
+    expect(botRowTime(at, now)).toBe(formatTime(at));
+  });
+
+  it("is Yesterday the day before, and the date before that", () => {
+    expect(botRowTime(new Date(2026, 9, 19, 23, 59).getTime(), now)).toBe("Yesterday");
+    expect(botRowTime(new Date(2026, 9, 6, 10, 0).getTime(), now)).toBe(new Date(2026, 9, 6).toLocaleDateString("en", { day: "numeric", month: "short" }));
   });
 });

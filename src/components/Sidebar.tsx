@@ -48,6 +48,7 @@ import { useHeldMenuMotion, useMenuMotion } from "./MenuMotion";
 import { lastNonReceipt } from "@/lib/receipts";
 import { botPreview, groupPreview } from "./sidebar-preview";
 import { activeLocale, t } from "@/lib/i18n";
+import { localDay } from "@/lib/transcript-derivations";
 import { copyText } from "@/lib/copy-text";
 import type { LocaleKey } from "@/locales";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -1147,6 +1148,17 @@ function useVisibleMessages(bot: Bot): Message[] {
   return useMemo(() => visibleMessages({ messages, activeLeafId }), [messages, activeLeafId]);
 }
 
+export function botRowTime(at: number, now: number): string {
+  const daysAgo = localDay(now) - localDay(at);
+  if (daysAgo <= 0) return formatTime(at);
+  if (daysAgo === 1) return t("chat.day.yesterday");
+  return new Date(at).toLocaleDateString(activeLocale(), { day: "numeric", month: "short" });
+}
+
+function BotRowTime({ at }: { at: number }) {
+  return botRowTime(at, useRelativeNow());
+}
+
 export const BotListItem = memo(function BotListItem(props: BotRowProps) {
   const advanced = useAdvancedMode();
   const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, engineMarks, liveCall, density, quiet, query, dispatch, onMenu } = props;
@@ -1261,9 +1273,9 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
               </Phone>
             )}
           </span>
-          {selected && last && !renaming && !expanded && (
-            <span className="shrink-0 text-[12px] tabular-nums text-ink-secondary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0 touch:opacity-0">
-              {formatTime(last.at)}
+          {last && !renaming && !expanded && (
+            <span data-bot-row-time className="shrink-0 text-[12px] tabular-nums text-ink-secondary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0 touch:opacity-0">
+              <BotRowTime at={last.at} />
             </span>
           )}
           {engineMark && density === "compact" && <BotModelMark bot={bot} instances={instances} />}
@@ -1905,19 +1917,18 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
 
       {density === "icons" && !rail && <DesktopWorkspaceSwitcher compact cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
       <OrganizationIdentity compact={density === "icons"} />
-      {simple ? searchShown && <SidebarSearchPill query={query} onQuery={setQuery} onClose={closeSearch} /> : <div className={cn("pt-1 pb-3", density === "icons" ? "hidden" : "px-3")}>
-        <div className="flex items-center gap-2 rounded-md border border-hairline/40 bg-inset/40 px-2.5 py-1.5 focus-within:border-focus">
-          <Search size={14} className="text-ink-secondary" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-            placeholder={t("sidebar.search")}
-            aria-label={t("sidebar.searchAria")}
-            className="w-full bg-transparent text-[12.5px] text-ink placeholder:text-ink-secondary focus:outline-none"
+      {advanced && density !== "icons" && (
+        <div data-sidebar-title className="flex items-center justify-between pb-1 pl-5 pr-3">
+          <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">{t("sidebar.brand")}</span>
+          <SidebarSearchToggle
+            ref={searchToggleRef}
+            open={searchShown}
+            onToggle={() => (searchShown ? closeSearch() : setSearchOpen(true))}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           />
         </div>
-      </div>}
+      )}
+      {density !== "icons" && searchShown && <SidebarSearchPill query={query} onQuery={setQuery} onClose={closeSearch} />}
       <SidebarTopNav density={density} />
       {universalPins && pinnedBots.length > 0 && (
         <div

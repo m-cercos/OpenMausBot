@@ -34,22 +34,24 @@ export function WorkLine({
 
 export function ActivityRun({
   messages,
+  elapsedMs,
   forceOpen = false,
   children,
 }: {
   messages: Message[];
+  elapsedMs?: number;
   forceOpen?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(forceOpen);
   const advanced = useAdvancedMode();
-  const summary = advanced ? describeRun(messages) : describeRun(messages, toolStepLabel);
+  const summary = describeRun(messages, (tool) => toolStepLabel(tool, "past"), elapsedMs);
   useEffect(() => {
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
   return (
     <div className="flex flex-col gap-1">
-      <WorkLine label={summary} open={open} title={open ? undefined : t("chat.run.showSteps")} onToggle={() => setOpen((value) => !value)} />
+      <WorkLine label={summary} open={open} title={open ? undefined : advanced ? describeRun(messages) : t("chat.run.showSteps")} onToggle={() => setOpen((value) => !value)} />
       {open && children}
     </div>
   );

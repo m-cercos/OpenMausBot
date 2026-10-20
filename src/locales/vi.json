@@ -1077,7 +1077,6 @@
   "common.undo": "Hoàn tác",
   "sidebar.aria": "Bot và điều hướng",
   "sidebar.cloudOwner": "Cloud của {email}",
-  "sidebar.search": "Tìm kiếm",
   "sidebar.searchAria": "Tìm kiếm bot và tin nhắn",
   "sidebar.noMatch": "Không có kết quả khớp với “{query}”",
   "sidebar.preview.waiting": "Đang chờ bạn…",

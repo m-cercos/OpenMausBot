@@ -9,7 +9,7 @@ import { BotEditorStore, initialState, type AppState, type useStore } from "@/st
 
 const mode = vi.hoisted(() => ({ advanced: false }));
 vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => mode.advanced, setAdvancedMode: () => {} }));
-import { SidebarFooterNav } from "./SidebarFooterNav";
+import { SidebarPlacesNav } from "./SidebarNav";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const files = (phase: CloudFilesState["phase"]): CloudFilesState =>
@@ -23,7 +23,7 @@ async function render(density: SidebarDensity = "comfortable", state: Partial<Ap
   const store = { state: { ...initialState, ...state }, dispatch } as unknown as ReturnType<typeof useStore>;
   act(() => root.unmount());
   root = createRoot(host);
-  await act(async () => root.render(createElement(BotEditorStore, { value: store, children: createElement(SidebarFooterNav, { density }) })));
+  await act(async () => root.render(createElement(BotEditorStore, { value: store, children: createElement(SidebarPlacesNav, { density }) })));
 }
 const row = () => host.querySelector<HTMLButtonElement>('[data-sidebar-nav="files"]');
 

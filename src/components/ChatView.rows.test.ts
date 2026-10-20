@@ -171,9 +171,14 @@ describe("chat transcript rows", () => {
     expect(document.body.textContent).not.toContain("Today");
   });
 
-  it("offers Regenerate on the last answer only, and not during a turn", async () => {
-    const regenerate = async () => (await menusWith(t("chat.regenerate"))).map((item) => item.mid);
+  it("keeps the last answer's actions shown, and offers Regenerate beside it only, never during a turn", async () => {
+    const regenerate = async () => [...document.querySelectorAll(`[data-mid] button[aria-label="${t("chat.regenerate")}"]`)]
+      .map((button) => button.closest("[data-mid]")!.getAttribute("data-mid"));
+    const shown = () => [...document.querySelectorAll('[data-mid] [data-testid="message-actions"][data-shown]')]
+      .map((actions) => actions.closest("[data-mid]")!.getAttribute("data-mid"));
+    expect(shown()).toEqual(["m5"]);
     expect(await regenerate()).toEqual(["m5"]);
+    expect(await menusWith(t("chat.regenerate"))).toEqual([]);
     const busy = (value: boolean) => (current: AppState) => {
       const { messages: _transcript, ...frame } = current.bots.find((bot) => bot.id === "pepper")!;
       const tasks = frame.tasks?.map((task) => ({ ...task, busy: value, activity: value ? "working" as const : "idle" as const }));

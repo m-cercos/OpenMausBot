@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import type { AppState, Bot, InstanceInfo } from "@/state/store";
 import { setLocale, t } from "@/lib/i18n";
 
-const fixture = vi.hoisted(() => ({ advanced: true, android: false }));
+const fixture = vi.hoisted(() => ({ advanced: true, android: false, browser: false }));
 
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
   ...await importOriginal<typeof import("./DesktopCapabilities")>(),
@@ -40,6 +40,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
 }));
 
 const { ComputerPanel } = await import("./ComputerPanel");
+const { requestComputerPanelView } = await import("@/lib/computer-panel-view");
 const { BotEditorStore, initialState } = await import("@/state/store");
 
 const engine = (instanceId: string) => ({
@@ -58,7 +59,10 @@ const makeBot = (patch: Partial<Bot> = {}): Bot => ({
 
 let root: Root | null = null;
 const value = (): Parameters<typeof BotEditorStore>[0]["value"] => ({
-  state: { ...initialState, instances: [engine("claude"), engine("codex")], config: { box: { configured: true } } as AppState["config"] } as AppState,
+  state: { ...initialState, instances: [engine("claude"), engine("codex")], config: {
+    box: { configured: true },
+    ...(fixture.browser ? { features: { browser: true }, browserEngine: { kind: "engine" } } : {}),
+  } as AppState["config"] } as AppState,
   dispatch: vi.fn(),
   flushBotPatches: async () => null,
   refreshInstances: async () => {},
@@ -101,6 +105,7 @@ beforeEach(() => {
   });
   fixture.advanced = true;
   fixture.android = false;
+  fixture.browser = false;
 });
 afterEach(() => {
   root?.unmount();
@@ -136,11 +141,11 @@ describe("Computer panel tab", () => {
 
   it("marks the selected trigger and only that one", async () => {
     await open(makeBot());
-    expect(tabs().map((candidate) => candidate.getAttribute("aria-selected"))).toEqual(["true", "false", "false", "false"]);
+    expect(tabs().map((candidate) => candidate.getAttribute("aria-selected"))).toEqual(["true", "false", "false", "false", "false"]);
 
     flushSync(() => tab("Data").click());
     await settle();
-    expect(tabs().map((candidate) => candidate.getAttribute("aria-selected"))).toEqual(["false", "false", "false", "true"]);
+    expect(tabs().map((candidate) => candidate.getAttribute("aria-selected"))).toEqual(["false", "false", "false", "true", "false"]);
   });
 
   it("keeps one Tab stop and moves it with the arrow, Home and End keys", async () => {
@@ -161,16 +166,16 @@ describe("Computer panel tab", () => {
     // Wraps around the row's ends.
     press("Computer", "ArrowLeft");
     await settle();
-    expect(selected()).toBe("Data");
-    press("Data", "ArrowRight");
+    expect(selected()).toBe("Files");
+    press("Files", "ArrowRight");
     await settle();
     expect(selected()).toBe("Computer");
 
     press("Computer", "End");
     await settle();
-    expect(selected()).toBe("Data");
-    expect(document.activeElement).toBe(tab("Data"));
-    press("Data", "Home");
+    expect(selected()).toBe("Files");
+    expect(document.activeElement).toBe(tab("Files"));
+    press("Files", "Home");
     await settle();
     expect(selected()).toBe("Computer");
     expect(document.activeElement).toBe(tab("Computer"));
@@ -189,7 +194,7 @@ describe("Computer panel tab", () => {
   it("moves over an Android tab that appeared", async () => {
     fixture.android = true;
     await open(makeBot());
-    expect(tabLabels()).toEqual(["Computer", "Routines", "Android", "Browser", "Data"]);
+    expect(tabLabels()).toEqual(["Computer", "Routines", "Android", "Browser", "Data", "Files"]);
     press("Routines", "ArrowRight");
     await settle();
     expect(selected()).toBe("Android");
@@ -206,6 +211,22 @@ describe("Computer panel tab", () => {
     await open(makeBot());
     expect(tabLabels()).not.toContain("Android");
     expect(selected()).toBe("Computer");
+  });
+
+  it("opens on Files when the chat header asks for them, over a browsing bot's Browser tab", async () => {
+    fixture.browser = true;
+    await open(makeBot({ computer: "browser" }));
+    expect(selected()).toBe("Browser");
+    root?.unmount();
+    root = null;
+
+    requestComputerPanelView("scout", "files");
+    await open(makeBot({ computer: "browser" }));
+    expect(selected()).toBe("Files");
+
+    flushSync(() => requestComputerPanelView("scout", "data"));
+    await settle();
+    expect(selected()).toBe("Data");
   });
 
   it("stops on the Files tab in Simple mode", async () => {

@@ -48,6 +48,7 @@ import { useHeldMenuMotion, useMenuMotion } from "./MenuMotion";
 import { lastNonReceipt } from "@/lib/receipts";
 import { botPreview, groupPreview } from "./sidebar-preview";
 import { activeLocale, t } from "@/lib/i18n";
+import { localDay } from "@/lib/transcript-derivations";
 import { copyText } from "@/lib/copy-text";
 import type { LocaleKey } from "@/locales";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -94,7 +95,6 @@ import {
   PINNED_SECTION_ID,
   PINNED_THREADS_SECTION_ID,
   SIMPLE_FIXED_SECTION_IDS,
-  TOOLS_SECTION_ID,
   keepFixedSectionSlots,
   mergeSectionOrder,
   moveSection,
@@ -115,7 +115,7 @@ import {
 import { sidebarSectionAttention } from "@/lib/sidebar-attention";
 import { botListItemPointerIntent } from "@/lib/sidebar-selection";
 import { phoneSettingsAction, SidebarPhoneButton } from "./SidebarPhoneButton";
-import { SidebarAppsButton, SidebarFooterNav, SidebarTodayNav } from "./SidebarFooterNav";
+import { SidebarAppsButton, SidebarPlacesNav, SidebarTopNav } from "./SidebarNav";
 import { GlassBar, GlassScrollFrame, GlassScroller } from "./GlassScrollFrame";
 import { DesktopWorkspaceSwitcher } from "./DesktopWorkspaceSwitcher";
 import { useCloudOwner } from "./CloudOwner";
@@ -123,7 +123,7 @@ import { SidebarProfileMenu } from "./SidebarProfileMenu";
 import { UpdateIndicator } from "./UpdateIndicator";
 import { SidebarSectionHeader } from "./SidebarSectionHeader";
 import { SidebarResizeHandle, useSidebarWidth } from "./SidebarResizeHandle";
-import { SIMPLE_RAIL_BUTTON, SIMPLE_TOP_BUTTON, SidebarEdgeToggle, SidebarSearchPill, SidebarSearchToggle } from "./SidebarSimpleTop";
+import { SIDEBAR_TITLE_BUTTON, SIMPLE_RAIL_BUTTON, SidebarEdgeToggle, SidebarSearchPill, SidebarSearchToggle } from "./SidebarSimpleTop";
 import { SidebarRailSeparator, SimpleRailFooter } from "./SidebarSimpleRail";
 import { useShowThreads } from "@/lib/thread-preferences";
 import { botShowsUnread } from "@/lib/bot-unread";
@@ -1107,6 +1107,7 @@ export interface BotRowProps {
   reveal: AppState["revealThread"];
   pendingQueued: AppState["pendingQueued"];
   instances: InstanceInfo[];
+  engineMarks: boolean;
   liveCall: AppState["liveCall"];
   locale: string;
   generatedTitles: boolean;
@@ -1134,6 +1135,7 @@ export function botRowProps(
     reveal: reveal && (bot.threadId === reveal.threadId || bot.tasks?.some((task) => task.threadId === reveal.threadId)) ? reveal : null,
     pendingQueued: state.pendingQueued,
     instances: state.instances,
+    engineMarks: new Set(state.bots.filter((peer) => !peer.hidden).map((peer) => peer.modelSelection.instanceId)).size > 1,
     liveCall: state.liveCall,
     locale: activeLocale(),
     generatedTitles: llmThreadTitlesEnabled(state.config),
@@ -1146,9 +1148,21 @@ function useVisibleMessages(bot: Bot): Message[] {
   return useMemo(() => visibleMessages({ messages, activeLeafId }), [messages, activeLeafId]);
 }
 
+export function botRowTime(at: number, now: number): string {
+  const daysAgo = localDay(now) - localDay(at);
+  if (daysAgo <= 0) return formatTime(at);
+  if (daysAgo === 1) return t("chat.day.yesterday");
+  return new Date(at).toLocaleDateString(activeLocale(), { day: "numeric", month: "short" });
+}
+
+function BotRowTime({ at }: { at: number }) {
+  return botRowTime(at, useRelativeNow());
+}
+
 export const BotListItem = memo(function BotListItem(props: BotRowProps) {
   const advanced = useAdvancedMode();
-  const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, liveCall, density, quiet, query, dispatch, onMenu } = props;
+  const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, engineMarks, liveCall, density, quiet, query, dispatch, onMenu } = props;
+  const engineMark = advanced && engineMarks;
   const showThreads = useShowThreads();
   const liveMedia = useLiveMedia();
   const remoteClient = typeof window !== "undefined" && window.ogb?.remoteClient?.active === true;
@@ -1196,7 +1210,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
           motionKey={mascotMotion?.nonce ?? 0}
           animated={working || unread || (mascotMotion?.kind ?? "none") !== "none"}
         />
-        {advanced && iconOnly && <BotModelBadge bot={bot} instances={instances} avatarSize={avatarSize} />}
+        {engineMark && iconOnly && <BotModelBadge bot={bot} instances={instances} avatarSize={avatarSize} />}
         {working && (
           <span
             data-testid="working-dot"
@@ -1259,12 +1273,12 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
               </Phone>
             )}
           </span>
-          {selected && last && !renaming && !expanded && (
-            <span className="shrink-0 text-[12px] tabular-nums text-ink-secondary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0 touch:opacity-0">
-              {formatTime(last.at)}
+          {last && !renaming && !expanded && (
+            <span data-bot-row-time className="shrink-0 text-[12px] tabular-nums text-ink-secondary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0 touch:opacity-0">
+              <BotRowTime at={last.at} />
             </span>
           )}
-          {advanced && density === "compact" && <BotModelMark bot={bot} instances={instances} />}
+          {engineMark && density === "compact" && <BotModelMark bot={bot} instances={instances} />}
           {(expanded || (quiet && !statusLine)) && unread && <span className="size-1.5 shrink-0 rounded-full bg-accent" aria-label={t("task.unreadMany")} />}
         </div>
         {(!expanded || deleting) && (!quiet || statusLine) && <div className="flex items-center justify-between gap-2">
@@ -1285,7 +1299,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
               )}
             </span>
           )}
-          {advanced && density === "comfortable" && <BotModelMark bot={bot} instances={instances} />}
+          {engineMark && density === "comfortable" && <BotModelMark bot={bot} instances={instances} />}
           {unread && <span className="size-2 shrink-0 rounded-full bg-accent" aria-label={t("task.unreadMany")} />}
         </div>}
       </div>
@@ -1690,13 +1704,10 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
       ref={importReturnRef}
       onClick={() => setPlusOpen((o) => !o)}
       aria-label={remoteClient ? t("sidebar.new") : t("sidebar.newOrShare")}
-      className={rail ? SIMPLE_RAIL_BUTTON : simple ? SIMPLE_TOP_BUTTON : cn(
-        "flex items-center justify-center text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-        density === "icons" ? "size-[46px] shrink-0 rounded-xl" : "size-8 rounded-md",
-      )}
+      className={rail ? SIMPLE_RAIL_BUTTON : density === "icons" ? "flex size-[46px] shrink-0 items-center justify-center rounded-xl text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus" : SIDEBAR_TITLE_BUTTON}
       title={remoteClient ? t("sidebar.new") : t("sidebar.newOrShare")}
     >
-      <Plus size={rail ? 18 : density === "icons" ? 20 : simple ? 16 : 17} strokeWidth={2} />
+      <Plus size={rail ? 18 : density === "icons" ? 20 : 17} strokeWidth={2} />
     </button>
     {plusMotion.shown && (
       <>
@@ -1814,21 +1825,20 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
             <span className="size-3 rounded-full bg-[#28c840]" />
           </div>
         ) : null}
-        {density !== "icons" && (
-          <div data-sidebar-top-slot className={cn("@container/sidebar-top flex min-w-0 flex-1 items-center", simple && "justify-end")}>
-            {!simple && <div data-sidebar-top-spacer className="min-w-0 flex-1 @min-[96px]/sidebar-top:min-w-6" />}
-            <div data-sidebar-top-switcher className={simple ? "flex min-w-0 items-center" : "flex min-w-0 max-w-[140px] items-center"}>
-              <DesktopWorkspaceSwitcher inline pill={simple} cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />
+        {advanced && density !== "icons" && (
+          <div data-sidebar-top-slot className="@container/sidebar-top flex min-w-0 flex-1 items-center">
+            <div data-sidebar-top-spacer className="min-w-0 flex-1 @min-[96px]/sidebar-top:min-w-6" />
+            <div data-sidebar-top-switcher className="flex min-w-0 max-w-[140px] items-center">
+              <DesktopWorkspaceSwitcher inline cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />
             </div>
           </div>
         )}
-        {!rail && <div
+        {advanced && <div
           data-sidebar-top-buttons
-          className={cn("relative flex shrink-0 items-center", density === "icons" ? "flex-col gap-1" : simple ? "gap-1 pl-0.5" : "ml-0.5 gap-0.5")}
+          className={cn("relative flex shrink-0 items-center", density === "icons" ? "flex-col gap-1" : "ml-0.5 gap-0.5")}
           style={windowNoDragStyle}
         >
-          {simple && <SidebarSearchToggle ref={searchToggleRef} open={searchShown} onToggle={() => (searchShown ? closeSearch() : setSearchOpen(true))} />}
-          {!collapseToIcons && (advanced || density === "icons") && <button
+          {!collapseToIcons && <button
             type="button"
             onClick={toggleCollapsed}
             aria-label={density === "icons" ? t("sidebar.density.expand") : t("sidebar.density.collapseAria")}
@@ -1849,7 +1859,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
           >
             <Search size={20} strokeWidth={2} />
           </button>}
-          {advanced && <div ref={attentionMenuRef} className={density === "icons" ? "relative" : "contents"}>
+          <div ref={attentionMenuRef} className={density === "icons" ? "relative" : "contents"}>
             <button
               type="button"
               onClick={() => setAttentionOpen((o) => !o)}
@@ -1896,27 +1906,24 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
                 </div>
               </>
             )}
-          </div>}
+          </div>
           {plusControl}
         </div>}
       </div>
 
       {density === "icons" && !rail && <DesktopWorkspaceSwitcher compact cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
       <OrganizationIdentity compact={density === "icons"} />
-      {simple ? searchShown && <SidebarSearchPill query={query} onQuery={setQuery} onClose={closeSearch} /> : <div className={cn("pt-1 pb-3", density === "icons" ? "hidden" : "px-3")}>
-        <div className="flex items-center gap-2 rounded-md border border-hairline/40 bg-inset/40 px-2.5 py-1.5 focus-within:border-focus">
-          <Search size={14} className="text-ink-secondary" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-            placeholder={t("sidebar.search")}
-            aria-label={t("sidebar.searchAria")}
-            className="w-full bg-transparent text-[12.5px] text-ink placeholder:text-ink-secondary focus:outline-none"
-          />
+      {density !== "icons" && (
+        <div data-sidebar-title className="flex items-center justify-between pb-1 pl-5 pr-3">
+          <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">{t("sidebar.brand")}</span>
+          <div className="relative flex shrink-0 items-center gap-0.5">
+            <SidebarSearchToggle ref={searchToggleRef} open={searchShown} onToggle={() => (searchShown ? closeSearch() : setSearchOpen(true))} />
+            {simple && plusControl}
+          </div>
         </div>
-      </div>}
-      <SidebarTodayNav density={density} />
+      )}
+      {density !== "icons" && searchShown && <SidebarSearchPill query={query} onQuery={setQuery} onClose={closeSearch} />}
+      <SidebarTopNav density={density} />
       {universalPins && pinnedBots.length > 0 && (
         <div
           data-sidebar-universal-pins=""
@@ -2122,11 +2129,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
         plus={plusControl}
         server={<DesktopWorkspaceSwitcher rail cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
       /> : <div className={cn("pb-3 pt-2", density === "icons" ? "flex flex-col items-center gap-1 px-2" : "px-3")}>
-        <SidebarFooterNav
-          density={density}
-          collapsed={sectionCollapsed(TOOLS_SECTION_ID)}
-          onToggleCollapsed={layoutInteractive ? () => toggleSection(TOOLS_SECTION_ID) : undefined}
-        />
+        {density === "icons" && <SidebarPlacesNav density={density} />}
         {density === "icons" && (
           <SidebarPhoneButton
             density={density}
@@ -2144,6 +2147,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
               <SidebarProfileMenu />
             </div>
             <UpdateIndicator />
+            {simple && <DesktopWorkspaceSwitcher rail cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
             <SidebarAppsButton />
           </div>
         )}

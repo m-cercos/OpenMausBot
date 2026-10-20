@@ -3,21 +3,24 @@ import { ClipboardList } from "lucide-react";
 import { t } from "@/lib/i18n";
 import type { Message } from "@/state/store";
 
-export function DigestChip({ message }: { message: Message }) {
+export function DigestChip({ message, afterSteps = false }: { message: Message; afterSteps?: boolean }) {
   const digest = message.digest;
   if (!digest) return null;
   const files = digest.files ? digest.files.changed.length + digest.files.added.length + digest.files.deleted.length + (digest.files.truncated ?? 0) : null;
   if (!digest.tools.length && !digest.toolCalls && !digest.toolsDropped &&
       !files && !digest.memory.length && !digest.memoryDropped) return null;
+  if (afterSteps && !files) return null;
   const tools = digest.toolCalls ?? `${digest.tools.reduce((n, tool) => n + tool.count, 0)}${digest.toolsDropped ? "+" : ""}`;
-  const label = files === null
-    ? t("chat.digestChipNoFiles", { tools })
-    : t("chat.digestChip", { tools, files });
+  const label = afterSteps
+    ? t("chat.digestFilesChanged", { files: files ?? 0 })
+    : files === null
+      ? t("chat.digestChipNoFiles", { tools })
+      : t("chat.digestChip", { tools, files });
   return (
     <div className="flex justify-start" data-testid="digest-chip">
       <span
         title={message.text ?? t("chat.digestTitle")}
-        className="ui-chip max-w-[min(480px,100%)] border border-hairline/40 bg-panel text-ink-secondary"
+        className="inline-flex max-w-[min(480px,100%)] items-center gap-1.5 text-[12px] text-ink-secondary"
       >
         <ClipboardList size={12} />
         <span className="truncate">{label}</span>

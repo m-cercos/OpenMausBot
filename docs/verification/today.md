@@ -10,7 +10,7 @@ route and the same page.
 ## Drive and evidence
 
 ```sh
-pnpm exec vitest run shared/today-outcomes.test.ts server/today.test.ts server/routes/today.test.ts src/components/TodayPage.test.ts src/components/SidebarFooterNav.today.test.ts
+pnpm exec vitest run shared/today-outcomes.test.ts server/today.test.ts server/routes/today.test.ts src/components/TodayPage.test.ts src/components/SidebarNav.today.test.ts
 OMB_UI_E2E=1 OMB_TODAY_SCREENSHOT=.omb-scratch/verify-evidence/today.png pnpm exec vitest run scripts/testing/today-ui.e2e.test.ts
 pnpm bench:today
 ```

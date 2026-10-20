@@ -26,6 +26,12 @@ export const panelTabProps = (view: ComputerPanelView, selected: boolean) => ({
   tabIndex: selected ? 0 : -1,
 }) as const;
 
+export function useSelectedTabInView(view: ComputerPanelView): void {
+  useEffect(() => {
+    document.getElementById(tabId(view))?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [view]);
+}
+
 export const tabPanelProps = (view: ComputerPanelView) => ({
   role: "tabpanel",
   id: panelId(view),

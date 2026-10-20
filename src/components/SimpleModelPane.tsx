@@ -42,6 +42,9 @@ export function SimpleModelPane({
   onPick,
   effort,
   variantsRow,
+  footer,
+  footerLink,
+  manageLabel,
   onManage,
 }: {
   providers: RailProvider[];
@@ -63,6 +66,9 @@ export function SimpleModelPane({
   onPick: (modelId: string) => void;
   effort?: { levels: EffortLevel[]; current?: EffortLevel; onPick: (level: EffortLevel) => void } | null;
   variantsRow?: ReactNode;
+  footer?: ReactNode;
+  footerLink?: ReactNode;
+  manageLabel?: string;
   onManage: () => void;
 }) {
   const row = "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus";
@@ -237,14 +243,17 @@ export function SimpleModelPane({
           </div>
         ))}
 
-        <div className="flex items-center justify-end">
+        {footer}
+
+        <div className="flex items-center justify-end gap-2">
+          {footerLink}
           <button
             type="button"
             data-simple-manage
             onClick={onManage}
             className="-mr-1 ml-auto flex shrink-0 items-center gap-0.5 rounded-lg px-1 py-1 text-[12px] font-medium text-accent-text hover:bg-control/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
-            {t("model.simple.manage")}
+            {manageLabel ?? t("model.simple.manage")}
             <ChevronRight size={13} aria-hidden="true" />
           </button>
         </div>

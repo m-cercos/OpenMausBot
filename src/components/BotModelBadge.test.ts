@@ -81,7 +81,7 @@ describe("sidebar bot row", () => {
   const badges = (markup: string) => markup.match(/<span data-testid="model-badge"[^>]*>/g) ?? [];
 
   beforeEach(() => {
-    fixture.state = { bots: [bot("claude", "opus")], instances: [claude], activeView: "chat", selectedId: "other" };
+    fixture.state = { bots: [bot("claude", "opus"), { ...bot("codex", "gpt-5"), id: "nova" }], instances: [claude], activeView: "chat", selectedId: "other" };
     fixture.advanced = true;
     vi.stubGlobal("window", { innerWidth: 1024, innerHeight: 768 });
     vi.stubGlobal("document", { body: {} });
@@ -102,6 +102,11 @@ describe("sidebar bot row", () => {
   // Simple mode hides the model picker, so its rows do not name the model either.
   it.each<SidebarDensity>(["comfortable", "compact", "icons"])("shows no model in a Simple mode %s row", (density) => {
     fixture.advanced = false;
+    expect(badges(render(bot("claude", "opus"), density))).toEqual([]);
+  });
+
+  it.each<SidebarDensity>(["comfortable", "compact", "icons"])("shows no mark in a %s row when every bot runs on the same engine", (density) => {
+    fixture.state = { ...fixture.state, bots: [bot("claude", "opus"), { ...bot("claude", "sonnet"), id: "nova" }, { ...bot("codex", "gpt-5"), id: "old", hidden: true }] };
     expect(badges(render(bot("claude", "opus"), density))).toEqual([]);
   });
 

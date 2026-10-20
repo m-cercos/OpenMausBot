@@ -5,12 +5,12 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 
-export const SIMPLE_TOP_BUTTON = "flex size-[30px] shrink-0 items-center justify-center rounded-full bg-raised/50 text-ink hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+export const SIDEBAR_TITLE_BUTTON = "flex size-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
 export const SIMPLE_RAIL_BUTTON = "flex size-9 shrink-0 items-center justify-center rounded-xl text-ink-secondary hover:bg-raised/60 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
 /** The small bump on the sidebar's right edge that collapses it to the rail and back (Simple mode).
- * It sits level with the top row, beside the + button; the Simple rail is 92px wide so the bump stays clear of the macOS
+ * It sits level with the top row; the Simple rail is 92px wide so the bump stays clear of the macOS
  * traffic-light zone, which swallows clicks before 88px.
  * Once mounted it is portaled to the end of <body> and pinned to the sidebar's edge: Electron applies -webkit-app-region
  * rects in document order, so the chat header's drag region (which comes after the sidebar) would otherwise swallow it. */
@@ -67,9 +67,9 @@ export function SidebarSearchToggle({ open, onToggle, ref }: { open: boolean; on
       aria-label={t("sidebar.searchAria")}
       aria-expanded={open}
       title={t("sidebar.searchAria")}
-      className={cn(SIMPLE_TOP_BUTTON, open && "bg-raised")}
+      className={cn(SIDEBAR_TITLE_BUTTON, open && "bg-raised")}
     >
-      <Search size={15} strokeWidth={2} aria-hidden="true" />
+      <Search size={17} strokeWidth={2} aria-hidden="true" />
     </button>
   );
 }

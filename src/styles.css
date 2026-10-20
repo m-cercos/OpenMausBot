@@ -168,7 +168,7 @@
      "the app is talking to you", not as a browser default */
   --color-focus: #459ffe;
   --color-accent-text: #7fc0ff;
-  --color-bubble-user: #5a5a5a;
+  --color-bubble-user: #2f2f2f;
   --color-success: #38d591;
   --color-danger: #ff5667;
   --color-warning: #ff9800;
@@ -189,7 +189,7 @@
   --chat-bubble-pct: 80%;
   --chat-card-pct: 88%;
   /* .chat-column: fills a narrow pane, then stops at this width and centers, so wider windows only grow the gutters. */
-  --chat-column-max: 60rem;
+  --chat-column-max: 48rem;
 }
 :root[data-chat-width="wide"] {
   --chat-bubble-max: 64rem;
@@ -249,7 +249,7 @@
   --color-accent-border: #459ffe;
   --color-accent-text: #7fc0ff;
   --color-accent-ink: #ffffff;
-  --color-bubble-user: #5a5a5a;
+  --color-bubble-user: #2f2f2f;
   --color-bubble-user-ink: #fcfcfc;   /* = ink: unchanged */
   --color-success: #38d591;
   --color-danger: #ff5667;

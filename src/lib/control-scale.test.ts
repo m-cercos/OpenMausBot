@@ -5,8 +5,6 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
-import { DigestChip } from "@/components/DigestChip";
-import type { Message } from "@/state/store";
 
 const src = join(dirname(fileURLToPath(import.meta.url)), "..");
 // windows checkouts can carry crlf line endings
@@ -43,13 +41,7 @@ describe("control scale", () => {
     }
   });
 
-  it("is what the digest chip and inline code render with", () => {
-    const message: Message = {
-      id: "digest", role: "bot", kind: "digest", at: 1,
-      digest: { turnId: "t", botId: "b", threadId: "th", at: 1, durationMs: 1, tools: [{ name: "Read", count: 2, failed: 0 }],
-        files: { changed: [], added: [], deleted: [] }, memory: [], reply: "", hookCoverage: "preview" },
-    };
-    expect(renderToStaticMarkup(createElement(DigestChip, { message }))).toMatch(/class="ui-chip /);
+  it("is what inline code renders with", () => {
     const html = renderToStaticMarkup(createElement(ChatMarkdown, { text: "run `pnpm test` now" }));
     expect(html).toContain('class="ui-code-chip break-words [unicode-bidi:isolate]"');
     expect(html).not.toContain("text-[13px]");

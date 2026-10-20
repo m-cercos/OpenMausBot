@@ -471,7 +471,6 @@
   "common.delete": "删除",
   "common.undo": "撤销",
   "sidebar.aria": "机器人与导航",
-  "sidebar.search": "搜索",
   "sidebar.searchAria": "搜索机器人和消息",
   "sidebar.noMatch": "没有与“{query}”匹配的内容",
   "sidebar.preview.waiting": "等待你的回应…",

@@ -1433,7 +1433,6 @@
   "common.undo": "Desfazer",
   "sidebar.aria": "Bots e navegação",
   "sidebar.cloudOwner": "Cloud de {email}",
-  "sidebar.search": "Buscar",
   "sidebar.searchAria": "Buscar bots e mensagens",
   "sidebar.noMatch": "Nada corresponde a “{query}”",
   "sidebar.preview.waiting": "Esperando por você…",

@@ -56,6 +56,15 @@ describe("DigestChip", () => {
     expect(html).toContain('title="Observed work, not a completion verdict"');
   });
 
+  it("after the turn's steps already showed, adds only the files changed, and nothing when none changed", () => {
+    const html = renderToStaticMarkup(createElement(DigestChip, { message, afterSteps: true }));
+    expect(html).toContain(">5 files changed<");
+    expect(html).not.toContain("tool calls");
+    for (const files of [undefined, { changed: [], added: [], deleted: [] }]) {
+      expect(renderToStaticMarkup(createElement(DigestChip, { message: { ...message, digest: { ...message.digest!, files } }, afterSteps: true }))).toBe("");
+    }
+  });
+
   it("does not imply zero changed files when capture was unavailable", () => {
     const html = renderToStaticMarkup(createElement(DigestChip, { message: { ...message, digest: { ...message.digest!, files: undefined, toolCalls: undefined } } }));
     expect(html).toContain("Did 12+ tool calls");

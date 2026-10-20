@@ -206,6 +206,18 @@ describe("an input method in the composer's menus", () => {
   });
 });
 
+describe("the send button", () => {
+  it("stays in place while the composer is empty, unavailable until there is something to send", () => {
+    render(createElement(Composer, { bot }));
+    const send = () => host.querySelector<HTMLButtonElement>('button[aria-label="Send message"]');
+    expect(send()?.disabled).toBe(true);
+    type(textarea(), "hi");
+    expect(send()?.disabled).toBe(false);
+    type(textarea(), "");
+    expect(send()?.disabled).toBe(true);
+  });
+});
+
 describe("the send key in hints", () => {
   it("names the key on the send button and in the busy composer", () => {
     fixture.instances = [{ instanceId: "test", driverKind: "codex", displayName: "Test", capabilities: { queueing: true } } as unknown as InstanceInfo];

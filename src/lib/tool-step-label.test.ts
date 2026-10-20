@@ -20,6 +20,16 @@ describe("toolStepLabel", () => {
     expect(toolStepLabel(tool)).toBe(label);
   });
 
+  it.each([
+    [{ name: "Bash", summary: "pnpm test" }, "ran a command"],
+    [{ name: "WebFetch" }, "opened a web page"],
+    [{ name: "agent_browser_click" }, "used the browser"],
+    [{ name: "GITHUB_GET_A_COMMIT" }, "get a commit"],
+    [{ name: "Messaged @Ada" }, "Messaged @Ada"],
+  ])("names %o in the past as %s, to sit inside a sentence", (tool, label) => {
+    expect(toolStepLabel(tool, "past")).toBe(label);
+  });
+
   it("names a command-titled chip as a command, not by its command line", () => {
     expect(toolStepLabel({ name: "ls -la /Users/sam/project", summary: "ls -la /Users/sam/project" })).toBe("Run a command");
   });

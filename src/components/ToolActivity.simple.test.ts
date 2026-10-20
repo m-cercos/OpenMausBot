@@ -52,15 +52,21 @@ describe("ActivityRun", () => {
     { id: "c", at: 3, role: "bot" as const, kind: "activity" as const, tool: { name: "mcp__omb__screenshot", ok: true } },
   ];
 
-  it("sums a folded run up in plain words in Simple mode", () => {
+  it("sums a folded run up in plain words, in the past", () => {
     const html = renderToStaticMarkup(createElement(ActivityRun, { messages: steps, children: null }));
-    expect(html).toContain("3 steps · Run a command ×2, Look at the screen");
+    expect(html).toContain("3 steps · ran a command ×2, looked at the screen");
   });
 
-  it("keeps the tool names in Advanced mode", () => {
+  it("says how long the run took when it knows", () => {
+    const html = renderToStaticMarkup(createElement(ActivityRun, { messages: steps, elapsedMs: 102_000, children: null }));
+    expect(html).toContain("Worked 1m 42s · ran a command ×2, looked at the screen");
+  });
+
+  it("uses the same words in Advanced mode and keeps the tool names in the line's tooltip", () => {
     mode.advanced = true;
     const html = renderToStaticMarkup(createElement(ActivityRun, { messages: steps, children: null }));
-    expect(html).toContain("3 steps · Bash, ls -la /tmp, mcp__omb__screenshot");
+    expect(html).toContain("3 steps · ran a command ×2, looked at the screen");
+    expect(html).toContain('title="3 steps · Bash, ls -la /tmp, mcp__omb__screenshot"');
   });
 });
 
@@ -71,7 +77,7 @@ describe("ActivityRun at narrow widths", () => {
       { id: "b", at: 2, role: "bot" as const, kind: "activity" as const, tool: { name: "mcp__omb__screenshot", ok: true } },
     ];
     const html = renderToStaticMarkup(createElement(ActivityRun, { messages: steps, children: null }));
-    expect(html).toMatch(/<button[^>]*class="flex min-w-0 max-w-full /);
-    expect(html).toContain('class="min-w-0 max-w-[480px] truncate font-medium leading-5"');
+    expect(html).toMatch(/<button[^>]*class="flex w-full min-w-0 /);
+    expect(html).toContain('class="min-w-0 truncate leading-5"');
   });
 });

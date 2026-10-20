@@ -897,7 +897,6 @@
   "common.undo": "復原",
   "sidebar.aria": "機器人與導覽",
   "sidebar.cloudOwner": "{email} 的 Cloud",
-  "sidebar.search": "搜尋",
   "sidebar.searchAria": "搜尋機器人與訊息",
   "sidebar.noMatch": "沒有符合「{query}」的項目",
   "sidebar.preview.waiting": "等待你的回應…",

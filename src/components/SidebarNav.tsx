@@ -1,4 +1,4 @@
-import { FolderOpen, Network, Puzzle, Sun, Zap } from "lucide-react";
+import { FolderOpen, Network, Puzzle, SquarePen, Sun, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useAppTriggers } from "@/lib/app-triggers";
@@ -9,9 +9,6 @@ import { useAdvancedMode } from "@/lib/interface-mode";
 import { isRoutineProblemRun } from "@/lib/routines";
 import { useSidebarToolsLayout, type SidebarDensity } from "@/lib/sidebar-preferences";
 import { useStore } from "@/state/store";
-
-import { SidebarSectionHeader } from "./SidebarSectionHeader";
-
 
 function NavRow({
   id,
@@ -61,13 +58,20 @@ function NavRow({
   );
 }
 
-/** The Today page, at the top of the sidebar in every mode, like an inbox. */
-export function SidebarTodayNav({ density }: { density: SidebarDensity }) {
+/** New bot, Today (like an inbox), then the places, at the top of the sidebar; the avatars-only density keeps its places in the footer. */
+export function SidebarTopNav({ density }: { density: SidebarDensity }) {
   const { state, dispatch } = useStore();
   const iconsOnly = density === "icons";
   const active = state.activeView === "today";
   return (
-    <div className={iconsOnly ? "flex justify-center px-2 pb-1" : "px-2 pb-2"}>
+    <div className={iconsOnly ? "flex justify-center px-2 pb-1" : "mx-2 mb-2 flex flex-col gap-0.5 border-b border-hairline/40 pb-2"}>
+      {!iconsOnly && <NavRow
+        id="new-bot"
+        label={t("sidebar.newBot")}
+        iconsOnly={false}
+        icon={() => <SquarePen size={18} className="text-ink-secondary" />}
+        onClick={() => dispatch({ type: "toggleNewBot", open: true })}
+      />}
       <NavRow
         id="today"
         label={t("sidebar.nav.today")}
@@ -76,6 +80,7 @@ export function SidebarTodayNav({ density }: { density: SidebarDensity }) {
         icon={(on) => <Sun size={iconsOnly ? 20 : 18} className={on ? "text-accent" : "text-ink-secondary"} />}
         onClick={() => dispatch({ type: "showToday" })}
       />
+      {!iconsOnly && <SidebarPlacesNav density={density} />}
     </div>
   );
 }
@@ -102,17 +107,7 @@ export function SidebarAppsButton() {
   );
 }
 
-export function SidebarFooterNav({
-  density,
-  rail = false,
-  collapsed = false,
-  onToggleCollapsed,
-}: {
-  density: SidebarDensity;
-  rail?: boolean;
-  collapsed?: boolean;
-  onToggleCollapsed?: () => void;
-}) {
+export function SidebarPlacesNav({ density, rail = false }: { density: SidebarDensity; rail?: boolean }) {
   const { state, dispatch } = useStore();
   const advanced = useAdvancedMode();
   const iconsOnly = density === "icons";
@@ -142,7 +137,6 @@ export function SidebarFooterNav({
     icon={(active) => <FolderOpen size={iconSize} className={tone(active)} />}
     onClick={() => dispatch({ type: "showFiles" })}
   />;
-  // Simple mode keeps Automations and Files, without the Tools header.
   if (!advanced && !iconsOnly) return <nav aria-label={t("sidebar.tools")} className="flex flex-col gap-0.5">{automationsRow}{filesRow}</nav>;
 
   const rows = (
@@ -173,20 +167,6 @@ export function SidebarFooterNav({
     </>
   );
 
-  if (iconsOnly) {
-    return <nav data-tour="tools" aria-label={t("sidebar.tools")} className={cn("flex flex-col items-center", rail ? "gap-0.5" : "gap-1")}>{rows}</nav>;
-  }
-  return (
-    <div data-tour="tools">
-      <SidebarSectionHeader
-        name={t("sidebar.tools")}
-        collapsed={collapsed}
-        alert={collapsed && automationsNeedYou}
-        onToggle={onToggleCollapsed}
-        reorderable={false}
-        dragging={false}
-      />
-      {!collapsed && <nav aria-label={t("sidebar.tools")} className={toolbar ? "flex flex-row gap-1" : "flex flex-col gap-0.5"}>{rows}</nav>}
-    </div>
-  );
+  const layout = iconsOnly ? cn("flex flex-col items-center", rail ? "gap-0.5" : "gap-1") : toolbar ? "flex flex-row gap-1" : "flex flex-col gap-0.5";
+  return <nav data-tour="tools" aria-label={t("sidebar.tools")} className={layout}>{rows}</nav>;
 }

@@ -110,14 +110,16 @@ function bot(effort?: EffortLevel, instanceId = "claude", model = "claude-opus-5
   };
 }
 
-function render(forBot: Bot, options: { contained?: boolean; thread?: boolean } = {}) {
+type RenderOptions = { contained?: boolean; thread?: boolean; inComposer?: boolean; approval?: ReactNode };
+
+function render(forBot: Bot, options: RenderOptions = {}) {
   fixture.values.length = Math.min(fixture.values.length, fixture.own);
   let tree: ReactNode = null;
   function Capture() {
     fixture.index = 0;
     tree = options.contained
       ? ModelPicker({ bot: forBot, contained: true, label: "Default model", ...(options.thread ? { threadId: forBot.threadId } : {}) })
-      : ModelPicker({ bot: forBot, threadId: forBot.threadId });
+      : ModelPicker({ bot: forBot, threadId: forBot.threadId, inComposer: options.inComposer, approval: options.approval });
     fixture.own = fixture.index;
     return tree;
   }
@@ -125,7 +127,7 @@ function render(forBot: Bot, options: { contained?: boolean; thread?: boolean } 
   return { html, nodes: nodes(tree) };
 }
 
-function open(forBot: Bot, options: { contained?: boolean; thread?: boolean } = {}) {
+function open(forBot: Bot, options: RenderOptions = {}) {
   const trigger = render(forBot, options).nodes.find((node) => node.props["data-tour"] === "model")!;
   (trigger.props.onClick as () => void)();
   return render(forBot, options);
@@ -834,5 +836,47 @@ describe("a thread's picker and its bot's model", () => {
     const forBot = scout(null, [{ threadId: "follows", model: null }]);
     pane(open(forBot))!.props.onPick("claude-sonnet-5-5");
     expect(render(forBot).html).not.toContain("data-thread-models-notice");
+  });
+});
+
+describe("the composer's picker in Advanced mode", () => {
+  const composer = { inComposer: true, approval: createElement("div", { "data-approval-stub": "" }) };
+  beforeEach(() => {
+    fixture.advanced = true;
+  });
+
+  it("opens as quick settings: models, plain effort steps, the approval choices and a way to the bot's settings", () => {
+    const opened = open(bot(), composer);
+    const html = menu(opened.html);
+    expect(pane(opened)).toBeDefined();
+    expect(opened.nodes.some((node) => node.type === ModelEngineRail)).toBe(false);
+    for (const step of ["Quick", "Balanced", "Deep", "Max"]) expect(html).toContain(`>${step}</button>`);
+    expect(region(html, "data-simple-effort-band")).toContain("data-approval-stub");
+    expect(html).toContain("Instructions, skills and more");
+    expect(html).toContain("More options");
+  });
+
+  it("names the effort on the trigger in the same plain words", () => {
+    expect(render(bot("medium"), composer).html).toContain("· Balanced");
+    expect(render(bot("medium")).html).toContain("· Medium");
+  });
+
+  it("changes only this conversation's model and effort", () => {
+    const opened = open(bot(), composer);
+    pane(opened)!.props.effort!.onPick("medium");
+    pane(opened)!.props.onPick("claude-sonnet-5-5");
+    expect(fixture.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "setModel", selection: expect.objectContaining({ effort: "medium" }) }));
+    expect(fixture.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ updateBotDefault: true }));
+  });
+
+  it("reaches the full picker from More options and the bot's panel from its settings link", () => {
+    const forBot = bot();
+    const opened = open(forBot, composer);
+    click(inside(opened).find((node) => node.props["data-model-quick-bot-settings"] !== undefined));
+    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "toggleSettings", open: true });
+
+    const reopened = open(forBot, composer);
+    click(inside(reopened).find((node) => node.props["data-simple-manage"] !== undefined));
+    expect(render(forBot, composer).nodes.some((node) => node.type === ModelEngineRail)).toBe(true);
   });
 });

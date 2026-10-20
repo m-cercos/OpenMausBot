@@ -234,7 +234,6 @@
   "common.delete": "Supprimer",
   "common.undo": "Annuler l'action",
   "sidebar.aria": "Bots et navigation",
-  "sidebar.search": "Rechercher",
   "sidebar.searchAria": "Rechercher des bots et des messages",
   "sidebar.noMatch": "Rien ne correspond à « {query} »",
   "sidebar.preview.waiting": "En attente de vous…",

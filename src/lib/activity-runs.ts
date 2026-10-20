@@ -159,7 +159,11 @@ export function groupTranscript(messages: Message[]): TranscriptItem[] {
 
 const MAX_NAMES = 3;
 
-export function describeRun(messages: Message[], label: (tool: NonNullable<Message["tool"]>) => string = (tool) => tool.name): string {
+export function describeRun(
+  messages: Message[],
+  label: (tool: NonNullable<Message["tool"]>) => string = (tool) => tool.name,
+  elapsedMs?: number,
+): string {
   const counts = new Map<string, number>();
   for (const message of messages) {
     const name = message.tool ? label(message.tool) : "";
@@ -168,5 +172,15 @@ export function describeRun(messages: Message[], label: (tool: NonNullable<Messa
   const names = [...counts].map(([name, count]) => (count > 1 ? `${name} ×${count}` : name));
   const shown = names.slice(0, MAX_NAMES).join(", ");
   const rest = names.length > MAX_NAMES ? ` ${t("chat.run.more", { count: names.length - MAX_NAMES })}` : "";
-  return t("chat.run.steps", { count: messages.length, tools: `${shown}${rest}` });
+  const tools = `${shown}${rest}`;
+  return elapsedMs !== undefined && elapsedMs >= 1_000
+    ? t("chat.run.workedSteps", { elapsed: formatElapsed(elapsedMs), tools })
+    : t("chat.run.steps", { count: messages.length, tools });
+}
+
+export function runElapsed(run: Message[], before: Message | undefined, after: Message | undefined, running: boolean): number | undefined {
+  if (!after && running) return undefined;
+  const start = before?.role === "user" ? before.at : run[0]!.at;
+  const end = after && after.role !== "user" ? after.at : run.at(-1)!.at;
+  return Math.max(0, end - start);
 }

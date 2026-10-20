@@ -454,12 +454,16 @@ export function ModelPicker({
   threadId,
   className,
   contained = false,
+  inComposer = false,
+  approval,
   label,
 }: {
   bot: Bot;
   threadId?: string;
   className?: string;
   contained?: boolean;
+  inComposer?: boolean;
+  approval?: ReactNode;
   label?: ReactNode;
 }) {
   const { state, dispatch, refreshInstances, refreshModels: refreshInstanceModels } = useStore();
@@ -487,7 +491,9 @@ export function ModelPicker({
   const lastClaudeIdRef = useRef<string | null>(null);
   const lastOpenaiIdRef = useRef<string | null>(null);
 
-  const simpleView = !advanced && !fullView;
+  const simpleView = (!advanced || inComposer) && !fullView;
+  const quickView = simpleView && advanced;
+  const updatesBotDefault = !threadId || (simpleView && !advanced ? simpleUpdatesBotDefault : scope === "bot");
   const popoverWidth = simpleView ? SIMPLE_POPOVER_WIDTH : POPOVER_WIDTH;
   useLayoutEffect(() => {
     if (!open || contained) return;
@@ -495,13 +501,14 @@ export function ModelPicker({
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
       const width = Math.min(popoverWidth, window.innerWidth - 32);
+      const room = inComposer ? rect.top : window.innerHeight - rect.bottom;
       setPlacement({ left: Math.max(16, Math.min(rect.right - width, window.innerWidth - width - 16)) - rect.left,
-        maxHeight: Math.max(0, Math.min(600, window.innerHeight - rect.bottom - 24)) });
+        maxHeight: Math.max(0, Math.min(600, room - 24)) });
     };
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [open, contained, popoverWidth]);
+  }, [open, contained, inComposer, popoverWidth]);
 
   const selection = bot.modelSelection;
   const active = state.instances.find((instance) => instance.instanceId === selection.instanceId);
@@ -657,7 +664,7 @@ export function ModelPicker({
   const pick = (instance: InstanceInfo, model: string) => {
     if (bot.busy || instance.policy) return;
     const nextSelection = modelSelectionForPick(selection, instance, model);
-    const updateBotDefault = !threadId || (simpleView ? simpleUpdatesBotDefault : scope === "bot");
+    const updateBotDefault = updatesBotDefault;
     const targets = updateBotDefault ? [currentTaskBot(profile, threadId ?? bot.threadId), profile] : [bot];
     if (targets.some((target) => modelSwitchNeedsAsk(approvalModeFor(target),
       state.instances.find((candidate) => candidate.instanceId === target.modelSelection.instanceId)?.driverKind,
@@ -740,7 +747,7 @@ export function ModelPicker({
     levels: simpleEffortLevels(activeLevels, selection.effort),
     current: selection.effort,
     onPick: (level: EffortLevel) => dispatch({ type: "setModel", botId: bot.id, threadId,
-      ...(threadId && simpleUpdatesBotDefault ? { updateBotDefault: true } : {}), selection: { ...selection, effort: level } }),
+      ...(threadId && updatesBotDefault ? { updateBotDefault: true } : {}), selection: { ...selection, effort: level } }),
   } : null;
 
   const botModelId = follows !== undefined && profile.modelSelection.instanceId === railInstance?.instanceId
@@ -786,12 +793,14 @@ export function ModelPicker({
       aria-expanded={open && !bot.busy}
       aria-haspopup="dialog"
       className={cn(
-        "flex items-center gap-1.5 rounded-full border border-hairline/40 bg-control/60 py-1 pl-2 pr-2.5 text-[13px] text-ink hover:bg-raised-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-control/60",
-        !contained && active && !showActiveAccount && COMPACT_SQUARE,
+        inComposer
+          ? "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink hover:bg-control disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+          : "flex items-center gap-1.5 rounded-full border border-hairline/40 bg-control/60 py-1 pl-2 pr-2.5 text-[13px] text-ink hover:bg-raised-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-control/60",
+        !contained && !inComposer && active && !showActiveAccount && COMPACT_SQUARE,
       )}
       title={bot.busy ? `${summary}${followLine}\n${t(threadId ? "model.threadBusy" : "model.busy")}` : `${summary}${followLine}`}
     >
-      {active && <InstanceProviderMark instance={active} size={14} />}
+      {active && !inComposer && <InstanceProviderMark instance={active} size={14} />}
       {!contained && active && showActiveAccount && (
         <span data-model-account-compact className="hidden max-w-20 truncate @max-4xl/chathead:inline">{active.displayName}</span>
       )}
@@ -809,7 +818,7 @@ export function ModelPicker({
           <span data-model-variant className="max-w-[120px] truncate text-ink-secondary">· {selectedVariantLabel}</span>
         ) : selection.effort && (
           <span data-model-effort className="shrink-0 text-ink-secondary">
-            · {advanced ? effortLabel(selection.effort) : friendlyEffort(selection.effort)}
+            · {advanced && !inComposer ? effortLabel(selection.effort) : friendlyEffort(selection.effort)}
           </span>
         )}
       </span>
@@ -846,7 +855,7 @@ export function ModelPicker({
             "flex flex-col overflow-hidden rounded-2xl border border-hairline/50 bg-card",
             contained
               ? "relative mt-3 w-full max-h-[min(420px,50dvh)]"
-              : "absolute right-0 top-full z-30 mt-2 max-w-[calc(100vw-2rem)] max-h-[min(600px,calc(100dvh-7rem))] shadow-2xl shadow-black/50",
+              : cn("absolute right-0 z-30 max-w-[calc(100vw-2rem)] max-h-[min(600px,calc(100dvh-7rem))] shadow-2xl shadow-black/50", inComposer ? "bottom-full mb-2" : "top-full mt-2"),
             motion.className,
           )}
         >
@@ -897,11 +906,27 @@ export function ModelPicker({
               botModelId={botModelId}
               onPick={(model) => railInstance && pick(railInstance, model)}
               variantsRow={active?.capabilities?.modelVariants ? (
-                <ModelVariantRow compact wide bot={bot} threadId={threadId} updateBotDefault={Boolean(threadId) && simpleUpdatesBotDefault}
+                <ModelVariantRow compact wide bot={bot} threadId={threadId} updateBotDefault={Boolean(threadId) && updatesBotDefault}
                   label={<span className="shrink-0 text-[12px] font-medium text-ink-secondary">{t("model.simple.reasoning")}</span>} />
               ) : undefined}
               effort={simpleEffort}
-              onManage={() => {
+              footer={quickView ? approval : undefined}
+              footerLink={quickView ? (
+                <button
+                  type="button"
+                  data-model-quick-bot-settings
+                  onClick={() => {
+                    setOpen(false);
+                    dispatch({ type: "toggleSettings", open: true });
+                  }}
+                  className="-ml-1 mr-auto flex min-w-0 items-center gap-0.5 rounded-lg px-1 py-1 text-[12px] font-medium text-ink hover:bg-control/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <span className="truncate">{t("model.quick.botSettings")}</span>
+                  <ChevronRight size={13} className="shrink-0" aria-hidden="true" />
+                </button>
+              ) : undefined}
+              manageLabel={quickView ? t("model.quick.moreOptions") : undefined}
+              onManage={quickView ? () => setFullView(true) : () => {
                 setOpen(false);
                 dispatch({ type: "toggleAppSettings", open: true, section: "engines" });
               }}

@@ -1396,7 +1396,6 @@
   "common.undo": "元に戻す",
   "sidebar.aria": "ボットとナビゲーション",
   "sidebar.cloudOwner": "{email} の Cloud",
-  "sidebar.search": "検索",
   "sidebar.searchAria": "ボットとメッセージを検索",
   "sidebar.searchClose": "検索を閉じる",
   "sidebar.noMatch": "「{query}」に一致するものはありません",

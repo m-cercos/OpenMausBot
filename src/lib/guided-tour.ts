@@ -39,7 +39,7 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   { id: "tour.composer", anchor: "composer", placement: "above" },
-  { id: "tour.model", anchor: "model", placement: "below" },
+  { id: "tour.model", anchor: "model", placement: "above" },
   { id: "tour.computer", anchor: "computer", placement: "below", onExit: "openComputer" },
   { id: "tour.computer-browser", anchor: "computer-browser", fallbackAnchor: "computer-tabs", skipIfMissing: true, placement: "below", onEnter: "openComputer", onExit: "closeComputer" },
   { id: "tour.tools", anchor: "tools", skipIfMissing: true, placement: "right", onExit: "openTools" },
@@ -50,10 +50,10 @@ export const TOUR_STEPS: TourStep[] = [
   { id: "tour.done", anchor: "composer", placement: "above" },
 ];
 
-// Simple mode's chat header holds only the bot: the model chip and the Computer button moved into the bot panel its
-// pill opens. Those steps point at the pill there, and give up rather than wait if even that is missing (a group chat).
+// Simple mode draws no model chip in the composer and no Computer button in the header: both live in the bot panel the
+// header's bot button opens. Those steps point at that button, and give up rather than wait if it is missing (a group chat).
 const SIMPLE_STEPS: Partial<Record<TourStepId, Partial<TourStep>>> = {
-  "tour.model": { anchor: "bot-pill", skipIfMissing: true, copy: "onboarding.tour.model-simple" },
+  "tour.model": { anchor: "bot-pill", placement: "below", skipIfMissing: true, copy: "onboarding.tour.model-simple" },
   "tour.computer": { anchor: "bot-pill", skipIfMissing: true, copy: "onboarding.tour.computer-simple" },
 };
 

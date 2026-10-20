@@ -15,7 +15,7 @@ vi.mock("@/lib/sidebar-preferences", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/sidebar-preferences")>(),
   useSidebarToolsLayout: () => fixture.toolsLayout,
 }));
-import { SidebarAppsButton, SidebarFooterNav } from "./SidebarFooterNav";
+import { SidebarAppsButton, SidebarPlacesNav } from "./SidebarNav";
 
 type Props = { children?: ReactNode; [key: string]: unknown };
 function nodes(value: ReactNode): ReactElement<Props>[] {
@@ -25,10 +25,10 @@ function nodes(value: ReactNode): ReactElement<Props>[] {
     return [node, ...nodes(node.props.children)];
   });
 }
-function render(density: SidebarDensity, { toolsLayout = "rows", ...extra }: { collapsed?: boolean; onToggleCollapsed?: () => void; toolsLayout?: SidebarToolsLayout } = {}) {
+function render(density: SidebarDensity, { toolsLayout = "rows" }: { toolsLayout?: SidebarToolsLayout } = {}) {
   fixture.toolsLayout = toolsLayout;
-  let tree!: ReturnType<typeof SidebarFooterNav>;
-  function Capture() { tree = SidebarFooterNav({ density, onToggleCollapsed: () => {}, ...extra }); return tree; }
+  let tree!: ReturnType<typeof SidebarPlacesNav>;
+  function Capture() { tree = SidebarPlacesNav({ density }); return tree; }
   const html = renderToStaticMarkup(createElement(Capture));
   return { html, nodes: nodes(tree) };
 }
@@ -42,7 +42,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("sidebar footer places", () => {
+describe("sidebar places", () => {
   it.each(["comfortable", "compact"] as const)("leads Advanced mode's places with Automations, then Team map, with Apps beside the profile instead (%s)", (density) => {
     fixture.advanced = true;
     const { html } = render(density);
@@ -65,7 +65,7 @@ describe("sidebar footer places", () => {
 
   it.each([false, true])("puts Automations on the avatars-only rail ahead of Apps (advanced: %s)", (advanced) => {
     fixture.advanced = advanced;
-    for (const html of [render("icons").html, renderToStaticMarkup(createElement(() => SidebarFooterNav({ density: "icons", rail: true })))]) {
+    for (const html of [render("icons").html, renderToStaticMarkup(createElement(() => SidebarPlacesNav({ density: "icons", rail: true })))]) {
       expect(html).toContain('aria-label="Automations" title="Automations"');
       expect(html.indexOf('data-sidebar-nav="automations"')).toBeLessThan(html.indexOf('data-sidebar-nav="apps"'));
     }
@@ -116,47 +116,14 @@ describe("sidebar footer places", () => {
   });
 });
 
-describe("Tools header", () => {
-  it.each(["comfortable", "compact"] as const)("labels the places with a Tools header, expanded by default (%s)", (density) => {
+describe("no Tools header", () => {
+  it.each(["comfortable", "compact"] as const)("lists the places with no header to fold, so they sit right under Today (%s)", (density) => {
     fixture.advanced = true;
     const { html } = render(density);
-    expect(html).toContain(">Tools<");
-    expect(html).toContain('aria-expanded="true"');
-    expect(html.indexOf(">Tools<")).toBeLessThan(html.indexOf('data-sidebar-nav="automations"'));
+    expect(html).not.toContain(">Tools<");
+    expect(html).not.toContain("aria-expanded");
+    expect(html).not.toContain('data-testid="section-alert"');
     for (const id of ["automations", "team-map"]) expect(html).toContain(`data-sidebar-nav="${id}"`);
-  });
-
-  it("keeps the Tools label and hides the rows when collapsed", () => {
-    fixture.advanced = true;
-    const { html } = render("comfortable", { collapsed: true });
-    expect(html).toContain(">Tools<");
-    expect(html).toContain('aria-expanded="false"');
-    for (const id of ["automations", "team-map"]) expect(html).not.toContain(`data-sidebar-nav="${id}"`);
-  });
-
-  it("toggles through the header", () => {
-    fixture.advanced = true;
-    const onToggleCollapsed = vi.fn();
-    const { nodes: tree } = render("comfortable", { onToggleCollapsed });
-    const header = tree.find((node) => typeof node.props.onToggle === "function")!;
-    (header.props.onToggle as () => void)();
-    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows the failed-run dot on the header only while collapsed", () => {
-    fixture.advanced = true;
-    fixture.state.routineRuns = [{ id: "r", status: "failed", scheduledFor: 1 }];
-    const collapsed = render("comfortable", { collapsed: true }).html;
-    expect(collapsed).toContain('data-testid="section-alert"');
-    expect(collapsed).not.toContain('data-testid="routines-attention"');
-    const expanded = render("comfortable").html;
-    expect(expanded).not.toContain('data-testid="section-alert"');
-    expect(expanded).toContain('data-testid="routines-attention"');
-  });
-
-  it("shows no dot on a collapsed header when nothing needs you", () => {
-    fixture.advanced = true;
-    expect(render("comfortable", { collapsed: true }).html).not.toContain('data-testid="section-alert"');
   });
 
   it("draws no Tools header in the avatars-only density or in Simple mode", () => {
@@ -166,10 +133,9 @@ describe("Tools header", () => {
     expect(render("comfortable").html).not.toContain(">Tools<");
   });
 
-  it("keeps the guided tour's tools anchor on the header and rows together", () => {
+  it("keeps the guided tour's tools anchor on the places", () => {
     fixture.advanced = true;
-    expect(render("comfortable").html).toContain('data-tour="tools"');
-    expect(render("comfortable", { collapsed: true }).html).toContain('data-tour="tools"');
+    expect(render("comfortable").html).toMatch(/<nav data-tour="tools" aria-label="Tools"/);
   });
 });
 
@@ -238,12 +204,11 @@ describe("toolbar tools layout", () => {
     expect(rows).toContain('class="flex flex-col items-center gap-1"');
   });
 
-  it("rows layout renders exactly as before", () => {
+  it("rows layout is the default: a column of labelled rows", () => {
     fixture.advanced = true;
     const unset = render("comfortable").html;
     expect(render("comfortable", { toolsLayout: "rows" }).html).toBe(unset);
-    expect(unset).toContain('<div data-tour="tools">');
-    expect(unset).toContain('<nav aria-label="Tools" class="flex flex-col gap-0.5">');
+    expect(unset).toContain('<nav data-tour="tools" aria-label="Tools" class="flex flex-col gap-0.5">');
     expect(unset).not.toContain("flex-row");
     for (const label of ["Automations", "Team map"]) {
       expect(unset).toContain(`>${label}</span>`);

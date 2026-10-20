@@ -35,6 +35,7 @@ import { splitTranscriptCitations, type CitationAttachment } from "@/lib/citatio
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { PlaceChip } from "./PlaceChip";
 import { ApprovalModeSelector } from "./ApprovalModeSelector";
+import { ModelPicker } from "./ModelPicker";
 import { CommandAllowlistDialog } from "./CommandAllowlistDialog";
 import { approvalModeFor, type ApprovalMode } from "../../shared/approval-mode";
 import {
@@ -821,9 +822,8 @@ export function Composer({
             data-composer-backdrop
             className="pointer-events-none absolute -left-5 -right-5 -bottom-3 top-1/2 bg-app"
           />}
-        <div data-tour="composer" className="@container/composer relative z-[1] rounded-3xl bg-composer px-2 py-1.5 ring-1 ring-composer-ring">
+        <div data-tour="composer" className="@container/composer relative z-[1] rounded-3xl bg-composer px-2.5 pb-2 pt-2.5 ring-1 ring-composer-ring">
         {replyTo && <ComposerReplyStrip message={replyTo} fallbackName={bot?.name} onClear={onClearReply} />}
-        <div data-composer-row className="flex items-end gap-1 @max-[30rem]/composer:flex-wrap">
           <input
             ref={fileInput}
             type="file"
@@ -835,39 +835,8 @@ export function Composer({
               e.target.value = "";
             }}
           />
-          {!locked && (
-            <div className="flex flex-wrap items-center gap-1">
-              {!advanced && <ComposerPlusMenu
-                onAttach={() => fileInput.current?.click()}
-                goal={goal}
-                approval={approvalChoice && modeBot && { name: modeBot.name, choice: approvalChoice }}
-                callBotId={bot && !group ? bot.id : undefined}
-              />}
-              {advanced && <button
-                type="button"
-                onClick={() => fileInput.current?.click()}
-                aria-label={t("composer.attach")}
-                title={t("composer.attach")}
-                className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink"
-              >
-                <Paperclip size={17} />
-              </button>}
-              {/* Simple mode keeps the chip only while Finish together is on, so the + menu's choice stays visible. */}
-              {goal && (advanced || goal.on) && <GoalToggle on={goal.on} onToggle={goal.onToggle} />}
-              {advanced && approvalChoice && <ApprovalModeSelector {...approvalChoice} />}
-              {modeBot && !remoteClient && advanced && (
-                <PlaceChip
-                  bot={modeBot}
-                  task={composerTask}
-                  live={Boolean(modeBot.busy)}
-                  disabled={Boolean(modeBot.busy)}
-                  onPin={(surface) => dispatch({ type: "updateTask", botId: modeBot.id, threadId: modeBot.threadId, patch: { surface } })}
-                />
-              )}
-            </div>
-          )}
           <MentionTextarea
-          wrapperClassName="@max-[30rem]/composer:order-first @max-[30rem]/composer:basis-full"
+          wrapperClassName="px-1.5"
           inputRef={inputRef}
           peers={group ? members ?? [] : state.bots.filter((member) => member.id !== bot?.id)}
           everyone={Boolean(group && !group.dm)}
@@ -984,7 +953,40 @@ export function Composer({
           aria-label={t("composer.placeholder.bot", { name: group ? group.name : (bot?.name ?? "") })}
             className="block max-h-[9rem] min-h-6 w-full resize-none overflow-y-auto bg-transparent px-1 py-1 text-[15px] leading-6 placeholder:text-ink-secondary focus:outline-none"
           />
-          <div data-composer-actions className="flex items-center gap-1 @max-[30rem]/composer:ml-auto">
+          <div data-composer-row className="mt-1.5 flex flex-wrap items-center gap-1">
+          {!locked && (
+            <div className="flex min-w-0 flex-wrap items-center gap-1">
+              {!advanced && <ComposerPlusMenu
+                onAttach={() => fileInput.current?.click()}
+                goal={goal}
+                approval={approvalChoice && modeBot && { name: modeBot.name, choice: approvalChoice }}
+                callBotId={bot && !group ? bot.id : undefined}
+              />}
+              {advanced && <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                aria-label={t("composer.attach")}
+                title={t("composer.attach")}
+                className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink"
+              >
+                <Paperclip size={17} />
+              </button>}
+              {/* Simple mode keeps the chip only while Finish together is on, so the + menu's choice stays visible. */}
+              {goal && (advanced || goal.on) && <GoalToggle on={goal.on} onToggle={goal.onToggle} />}
+              {advanced && approvalChoice && <ApprovalModeSelector {...approvalChoice} labelled />}
+              {modeBot && !remoteClient && advanced && (
+                <PlaceChip
+                  bot={modeBot}
+                  task={composerTask}
+                  live={Boolean(modeBot.busy)}
+                  disabled={Boolean(modeBot.busy)}
+                  onPin={(surface) => dispatch({ type: "updateTask", botId: modeBot.id, threadId: modeBot.threadId, patch: { surface } })}
+                />
+              )}
+            </div>
+          )}
+          <div data-composer-actions className="ml-auto flex items-center gap-1">
+          {bot && !group && advanced && !remoteClient && <ModelPicker key={bot.threadId} bot={bot} threadId={bot.threadId} inComposer />}
           {busy && !locked && (
           <button
             onClick={interruptTurn}

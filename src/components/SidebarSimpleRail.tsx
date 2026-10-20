@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { t } from "@/lib/i18n";
 
-import { SidebarFooterNav } from "./SidebarFooterNav";
+import { SidebarPlacesNav } from "./SidebarNav";
 import { SidebarProfileMenu } from "./SidebarProfileMenu";
 import { SIMPLE_RAIL_BUTTON } from "./SidebarSimpleTop";
 import { UpdateIndicator } from "./UpdateIndicator";
@@ -24,7 +24,7 @@ export function SimpleRailFooter({ onSearch, plus, server }: {
       </button>
       <div className="relative flex w-full justify-center">{plus}</div>
       {server}
-      <SidebarFooterNav density="icons" rail />
+      <SidebarPlacesNav density="icons" rail />
       <UpdateIndicator />
       <div className="mt-1.5">
         <SidebarProfileMenu iconOnly rail />

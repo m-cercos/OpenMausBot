@@ -94,7 +94,6 @@ import {
   PINNED_SECTION_ID,
   PINNED_THREADS_SECTION_ID,
   SIMPLE_FIXED_SECTION_IDS,
-  TOOLS_SECTION_ID,
   keepFixedSectionSlots,
   mergeSectionOrder,
   moveSection,
@@ -115,7 +114,7 @@ import {
 import { sidebarSectionAttention } from "@/lib/sidebar-attention";
 import { botListItemPointerIntent } from "@/lib/sidebar-selection";
 import { phoneSettingsAction, SidebarPhoneButton } from "./SidebarPhoneButton";
-import { SidebarAppsButton, SidebarFooterNav, SidebarTodayNav } from "./SidebarFooterNav";
+import { SidebarAppsButton, SidebarPlacesNav, SidebarTopNav } from "./SidebarNav";
 import { GlassBar, GlassScrollFrame, GlassScroller } from "./GlassScrollFrame";
 import { DesktopWorkspaceSwitcher } from "./DesktopWorkspaceSwitcher";
 import { useCloudOwner } from "./CloudOwner";
@@ -1107,6 +1106,7 @@ export interface BotRowProps {
   reveal: AppState["revealThread"];
   pendingQueued: AppState["pendingQueued"];
   instances: InstanceInfo[];
+  engineMarks: boolean;
   liveCall: AppState["liveCall"];
   locale: string;
   generatedTitles: boolean;
@@ -1134,6 +1134,7 @@ export function botRowProps(
     reveal: reveal && (bot.threadId === reveal.threadId || bot.tasks?.some((task) => task.threadId === reveal.threadId)) ? reveal : null,
     pendingQueued: state.pendingQueued,
     instances: state.instances,
+    engineMarks: new Set(state.bots.filter((peer) => !peer.hidden).map((peer) => peer.modelSelection.instanceId)).size > 1,
     liveCall: state.liveCall,
     locale: activeLocale(),
     generatedTitles: llmThreadTitlesEnabled(state.config),
@@ -1148,7 +1149,8 @@ function useVisibleMessages(bot: Bot): Message[] {
 
 export const BotListItem = memo(function BotListItem(props: BotRowProps) {
   const advanced = useAdvancedMode();
-  const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, liveCall, density, quiet, query, dispatch, onMenu } = props;
+  const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, engineMarks, liveCall, density, quiet, query, dispatch, onMenu } = props;
+  const engineMark = advanced && engineMarks;
   const showThreads = useShowThreads();
   const liveMedia = useLiveMedia();
   const remoteClient = typeof window !== "undefined" && window.ogb?.remoteClient?.active === true;
@@ -1196,7 +1198,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
           motionKey={mascotMotion?.nonce ?? 0}
           animated={working || unread || (mascotMotion?.kind ?? "none") !== "none"}
         />
-        {advanced && iconOnly && <BotModelBadge bot={bot} instances={instances} avatarSize={avatarSize} />}
+        {engineMark && iconOnly && <BotModelBadge bot={bot} instances={instances} avatarSize={avatarSize} />}
         {working && (
           <span
             data-testid="working-dot"
@@ -1264,7 +1266,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
               {formatTime(last.at)}
             </span>
           )}
-          {advanced && density === "compact" && <BotModelMark bot={bot} instances={instances} />}
+          {engineMark && density === "compact" && <BotModelMark bot={bot} instances={instances} />}
           {(expanded || (quiet && !statusLine)) && unread && <span className="size-1.5 shrink-0 rounded-full bg-accent" aria-label={t("task.unreadMany")} />}
         </div>
         {(!expanded || deleting) && (!quiet || statusLine) && <div className="flex items-center justify-between gap-2">
@@ -1285,7 +1287,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
               )}
             </span>
           )}
-          {advanced && density === "comfortable" && <BotModelMark bot={bot} instances={instances} />}
+          {engineMark && density === "comfortable" && <BotModelMark bot={bot} instances={instances} />}
           {unread && <span className="size-2 shrink-0 rounded-full bg-accent" aria-label={t("task.unreadMany")} />}
         </div>}
       </div>
@@ -1916,7 +1918,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
           />
         </div>
       </div>}
-      <SidebarTodayNav density={density} />
+      <SidebarTopNav density={density} />
       {universalPins && pinnedBots.length > 0 && (
         <div
           data-sidebar-universal-pins=""
@@ -2122,11 +2124,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
         plus={plusControl}
         server={<DesktopWorkspaceSwitcher rail cloudHome={state.config?.cloudHome === true} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
       /> : <div className={cn("pb-3 pt-2", density === "icons" ? "flex flex-col items-center gap-1 px-2" : "px-3")}>
-        <SidebarFooterNav
-          density={density}
-          collapsed={sectionCollapsed(TOOLS_SECTION_ID)}
-          onToggleCollapsed={layoutInteractive ? () => toggleSection(TOOLS_SECTION_ID) : undefined}
-        />
+        {density === "icons" && <SidebarPlacesNav density={density} />}
         {density === "icons" && (
           <SidebarPhoneButton
             density={density}

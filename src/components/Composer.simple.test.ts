@@ -35,6 +35,7 @@ vi.mock("./CallView", () => ({ CallButton: (props: Record<string, unknown>) => {
   fixture.call = props;
   return null;
 } }));
+vi.mock("./ModelPicker", () => ({ ModelPicker: () => null }));
 vi.mock("./GroupCallView", () => ({ GroupCallButton: (props: Record<string, unknown>) => {
   fixture.groupCall = props;
   return null;

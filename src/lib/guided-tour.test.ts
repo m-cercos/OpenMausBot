@@ -63,13 +63,13 @@ describe("guided tour", () => {
     expect(ANCHOR_EFFECTS.has("closeApps")).toBe(false);
   });
 
-  it("keeps Advanced mode's steps exactly as they were", () => {
+  it("points Advanced mode's model step up at the composer's model chip", () => {
     expect(tourSteps(true)).toBe(TOUR_STEPS);
-    expect(step("tour.model")).toEqual({ id: "tour.model", anchor: "model", placement: "below" });
+    expect(step("tour.model")).toEqual({ id: "tour.model", anchor: "model", placement: "above" });
     expect(step("tour.computer")).toEqual({ id: "tour.computer", anchor: "computer", placement: "below", onExit: "openComputer" });
   });
 
-  it("walks Simple mode through the bot pill where the header's model chip and Computer button were", () => {
+  it("walks Simple mode through the header's bot button, whose panel holds the model and the Computer", () => {
     const simple = tourSteps(false);
     expect(simple.map((s) => s.id)).toEqual(TOUR_STEPS.map((s) => s.id));
     expect(simple.map((s) => s.anchor)).toEqual([

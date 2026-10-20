@@ -29,6 +29,7 @@ export function ApprovalModeSelector({
   align = "left",
   menuDirection = "up",
   wide = false,
+  labelled = false,
   disabled = false,
   trustedModesAvailable = true,
   trustedModesNotice,
@@ -42,6 +43,7 @@ export function ApprovalModeSelector({
   align?: "left" | "right";
   menuDirection?: "up" | "down";
   wide?: boolean;
+  labelled?: boolean;
   disabled?: boolean;
   trustedModesAvailable?: boolean;
   trustedModesNotice?: string;
@@ -111,7 +113,9 @@ export function ApprovalModeSelector({
         className={cn(
           wide
             ? "flex h-10 w-full items-center justify-between rounded-lg border border-hairline/40 bg-inset px-3.5 text-[13px] text-ink hover:bg-raised"
-            : "flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink",
+            : labelled
+              ? cn("flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] hover:bg-control", mode === "full" ? "text-warning" : "text-ink-secondary hover:text-ink")
+              : "flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink",
           triggerDisabled && "cursor-not-allowed opacity-45 hover:bg-transparent hover:text-ink-secondary",
         )}
       >
@@ -120,6 +124,11 @@ export function ApprovalModeSelector({
             <CurrentIcon size={14} className="shrink-0 opacity-70" />
             <span className="truncate">{current.label}</span>
           </span>
+        ) : labelled ? (
+          <>
+            <CurrentIcon size={15} className="shrink-0 opacity-80" />
+            <span className="whitespace-nowrap @max-[30rem]/composer:sr-only">{current.chip}</span>
+          </>
         ) : (
           <CurrentIcon size={16} className="shrink-0 opacity-80" />
         )}

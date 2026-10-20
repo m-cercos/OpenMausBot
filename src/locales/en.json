@@ -1824,6 +1824,7 @@
   "chat.botScreen": "Bot's screen",
   "chat.digestChip": "Did {tools} tool calls · {files} files changed",
   "chat.digestChipNoFiles": "Did {tools} tool calls",
+  "chat.digestFilesChanged": "{files} files changed",
   "chat.digestTitle": "What this turn did",
   "chat.compactionTitle": "Earlier context summarized",
   "chat.compactionHint": "Your full conversation is still here. The agent uses this summary and recent messages when continuing.",

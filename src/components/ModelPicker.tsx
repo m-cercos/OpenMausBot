@@ -454,12 +454,14 @@ export function ModelPicker({
   threadId,
   className,
   contained = false,
+  inComposer = false,
   label,
 }: {
   bot: Bot;
   threadId?: string;
   className?: string;
   contained?: boolean;
+  inComposer?: boolean;
   label?: ReactNode;
 }) {
   const { state, dispatch, refreshInstances, refreshModels: refreshInstanceModels } = useStore();
@@ -495,13 +497,14 @@ export function ModelPicker({
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
       const width = Math.min(popoverWidth, window.innerWidth - 32);
+      const room = inComposer ? rect.top : window.innerHeight - rect.bottom;
       setPlacement({ left: Math.max(16, Math.min(rect.right - width, window.innerWidth - width - 16)) - rect.left,
-        maxHeight: Math.max(0, Math.min(600, window.innerHeight - rect.bottom - 24)) });
+        maxHeight: Math.max(0, Math.min(600, room - 24)) });
     };
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [open, contained, popoverWidth]);
+  }, [open, contained, inComposer, popoverWidth]);
 
   const selection = bot.modelSelection;
   const active = state.instances.find((instance) => instance.instanceId === selection.instanceId);
@@ -786,12 +789,14 @@ export function ModelPicker({
       aria-expanded={open && !bot.busy}
       aria-haspopup="dialog"
       className={cn(
-        "flex items-center gap-1.5 rounded-full border border-hairline/40 bg-control/60 py-1 pl-2 pr-2.5 text-[13px] text-ink hover:bg-raised-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-control/60",
-        !contained && active && !showActiveAccount && COMPACT_SQUARE,
+        inComposer
+          ? "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink hover:bg-control disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+          : "flex items-center gap-1.5 rounded-full border border-hairline/40 bg-control/60 py-1 pl-2 pr-2.5 text-[13px] text-ink hover:bg-raised-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-control/60",
+        !contained && !inComposer && active && !showActiveAccount && COMPACT_SQUARE,
       )}
       title={bot.busy ? `${summary}${followLine}\n${t(threadId ? "model.threadBusy" : "model.busy")}` : `${summary}${followLine}`}
     >
-      {active && <InstanceProviderMark instance={active} size={14} />}
+      {active && !inComposer && <InstanceProviderMark instance={active} size={14} />}
       {!contained && active && showActiveAccount && (
         <span data-model-account-compact className="hidden max-w-20 truncate @max-4xl/chathead:inline">{active.displayName}</span>
       )}
@@ -846,7 +851,7 @@ export function ModelPicker({
             "flex flex-col overflow-hidden rounded-2xl border border-hairline/50 bg-card",
             contained
               ? "relative mt-3 w-full max-h-[min(420px,50dvh)]"
-              : "absolute right-0 top-full z-30 mt-2 max-w-[calc(100vw-2rem)] max-h-[min(600px,calc(100dvh-7rem))] shadow-2xl shadow-black/50",
+              : cn("absolute right-0 z-30 max-w-[calc(100vw-2rem)] max-h-[min(600px,calc(100dvh-7rem))] shadow-2xl shadow-black/50", inComposer ? "bottom-full mb-2" : "top-full mt-2"),
             motion.className,
           )}
         >

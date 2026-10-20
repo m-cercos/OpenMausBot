@@ -1660,6 +1660,7 @@
   "chat.botScreen": "Pantalla del bot",
   "chat.digestChip": "Hizo {tools} llamadas a herramientas · {files} archivos cambiados",
   "chat.digestChipNoFiles": "Hizo {tools} llamadas a herramientas",
+  "chat.digestFilesChanged": "{files} archivos cambiados",
   "chat.digestTitle": "Lo que hizo este turno",
   "chat.compactionTitle": "Contexto anterior resumido",
   "chat.compactionHint": "Tu conversación completa sigue aquí. El agente usa este resumen y los mensajes recientes para continuar.",

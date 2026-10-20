@@ -14,7 +14,7 @@ const styles = readFileSync(stylesPath, "utf8");
 
 // Keyed by file and a class-string snippet, so a stale entry fails instead of silently widening.
 const notActions: Array<{ file: string; snippet: string; why: string }> = [
-  { file: "components/ChatView.tsx", snippet: "self-end pb-1 text-[11px] tabular-nums", why: "message timestamp, informational" },
+  { file: "components/ChatView.tsx", snippet: "text-[11px] tabular-nums text-ink-tertiary opacity-0", why: "message timestamp, informational" },
   { file: "components/GroupView.tsx", snippet: "self-end pb-1 text-[11px] tabular-nums", why: "message timestamp, informational" },
   { file: "components/ScreenFrame.tsx", snippet: "group-hover/image:opacity-100", why: "aria-hidden zoom hint; the whole image is the tap target" },
   { file: "components/AttachmentPreview.tsx", snippet: "group-hover/image:opacity-100", why: "zoom hint; the whole image is the tap target" },
@@ -23,7 +23,7 @@ const notActions: Array<{ file: string; snippet: string; why: string }> = [
   { file: "components/RoutineCalendarPage.tsx", snippet: "cursor-ns-resize", why: "mouse drag-resize handle for call events" },
   { file: "components/ComputerPanel.tsx", snippet: "opacity-80", why: "already visible at 80% without hover" },
   { file: "components/bot-panel/PanelHero.tsx", snippet: "whitespace-nowrap rounded-md border border-hairline bg-menu", why: "\"Edit avatar\" tooltip; the avatar button itself is the tap target" },
-  { file: "components/ChatView.tsx", snippet: "-ml-2.5 w-0 shrink-0 text-ink-secondary", why: "decorative chevron in the Simple bot pill; the whole pill is the tap target" },
+  { file: "components/ChatView.tsx", snippet: "-ml-2.5 w-0 shrink-0 text-ink-secondary", why: "decorative chevron in the Simple header's bot button; the whole button is the tap target" },
 ];
 
 function sourceFiles(dir: string): string[] {
